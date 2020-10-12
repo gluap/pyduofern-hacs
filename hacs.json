@@ -1,0 +1,5 @@
+{
+  "name": "duofern",
+  "domains": ["cover", "light", "binary_sensor"],
+  "homeassistant": "0.99.9"
+}

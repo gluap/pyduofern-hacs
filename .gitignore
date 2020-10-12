@@ -1,0 +1,13 @@
+*.pm
+*.pyc
+**/coverage/*
+build/**
+coverage/**
+dist/**
+*.egg-info/**
+.coverage
+.idea/**
+**/du*ern.json
+**/mysensors.json
+.pypirc
+venv/**
