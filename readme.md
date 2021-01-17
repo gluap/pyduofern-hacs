@@ -17,3 +17,10 @@ Setting up pyduofern in hacs
 4. In Homeassistant go to *Configuration -> Integrations*, click the + sign to add an integration and search for *dufoern*
 
 5. Complete the setup dialog
+![](pyduofern-configflow.png?raw=true)
+
+Pairing a device
+----------------
+1. Put device in *pairing mode*
+2. In Homeassistant open *Developer->Services* and call ``duofern.start_pairing`
+![](pyduofern-pairing.png?raw=true)
