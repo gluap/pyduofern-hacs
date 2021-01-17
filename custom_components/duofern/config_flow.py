@@ -5,7 +5,7 @@ from homeassistant import config_entries
 
 from .const import DOMAIN
 
-
+@config_entries.HANDLERS.register(DOMAIN)
 class DomainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for duofern."""
 
