@@ -27,7 +27,7 @@ class DomainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     title='duofern', data=user_input
                 )
         if os.path.isdir("/dev/serial/by-id"):
-            serialdevs = set(os.listdir("/dev/serial/by-id/"))
+            serialdevs = set(f"/dev/serial/by-id/{d}" for d in set(os.listdir("/dev/serial/by-id/")))
         else:
             serialdevs=["could not find /dev/serial/by-id/, did you plug in your dufoern stick correctly?"]
         return self.async_show_form(
