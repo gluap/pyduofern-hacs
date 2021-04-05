@@ -1,4 +1,5 @@
 import os
+import glob
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -26,10 +27,18 @@ class DomainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title='duofern', data=user_input
                 )
+
+        serialdevs = set()
         if os.path.isdir("/dev/serial/by-id"):
-            serialdevs = set(f"/dev/serial/by-id/{d}" for d in set(os.listdir("/dev/serial/by-id/")))
-        else:
-            serialdevs=["could not find /dev/serial/by-id/, did you plug in your dufoern stick correctly?"]
+            serialdevs.update(set(f"/dev/serial/by-id/{d}" for d in set(os.listdir("/dev/serial/by-id/"))))
+
+        if os.path.isdir("/dev/"):
+            serialdevs.update(set(glob.glob("/dev/ttyU*")))
+            serialdevs.update(set(glob.glob("/dev/ttyA*")))
+
+        if len(serialdevs) == 0:
+            serialdevs = ["could not find /dev/serial/by-id/ or /dev/tty{U,A}*, did you plug in your duofern stick correctly?"]
+
         return self.async_show_form(
             step_id='user',
             data_schema=vol.Schema({
