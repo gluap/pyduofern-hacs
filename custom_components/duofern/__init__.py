@@ -118,5 +118,5 @@ def setup(hass, config):
     return True
 
 
-def async_setup_entry(hass, entry):
+async def async_setup_entry(hass, entry):
     pass
