@@ -12,7 +12,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-SHUTTER_IDS = {"40", "41", "42", "47", "49", "4b", "4c", "70", "61"}
+SHUTTER_IDS = {"40", "41", "42", "47", "49", "4b", "4c", "4e", "70", "61"}
 
 
 def is_shutter(id):
