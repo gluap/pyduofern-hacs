@@ -3,6 +3,9 @@ pyduofern-hacs
 
 This repository contains hacs integration for [pyduofern](https://github.com/gluap/pyduofern).
 
+As reported in [#31](https://github.com/gluap/pyduofern/issues/31) 10-Digit codes recently announced by Rademacher are not supported as of now as the handshake/
+protocol for these devices was not reverse engineered by anyone as far as I know.
+
 You can use this repo with [hacs](https://hacs.xyz)
 
 Setting up pyduofern in hacs
@@ -26,7 +29,7 @@ To use ``pyduofern`` within `Homeassistant <https://home-assistant.io/>`_, add t
 ``~/.homeassistant/`` directory and enable it by adding the following to your ``configuration.yaml``::
 
     duofern:
-       # (4 hex digits as code required, last 4 digits if migrating from FHEM)
+       # (4 hex digits as code required, last 4 digits if migrating from FHEM, 10 digit devices are not supported as of now)
        code: deda
        # Optional options, comment in if required:
        # serial_port: /dev/ttyUSB0
