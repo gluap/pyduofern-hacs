@@ -104,7 +104,7 @@ def setup(hass, config):
                 device = hass.data[DOMAIN]['devices'][id] # Get device by id
                 if not device.should_poll: # Only trigger update if this entity is not polling
                     try:
-                        device.schedule_update_ha_state(True) # Trigger update on the updated entity
+                        device.async_schedule_update_ha_state(True) # Trigger update on the updated entity
                     except AssertionError:
                         _LOGGER.warning("Update callback called before HA is ready") # Trying to update before HA is ready
             except KeyError:
