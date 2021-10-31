@@ -25,7 +25,7 @@ Setting up pyduofern in hacs
 
 Setup with homeassistant core (no Homeassistant OS)
 ---------------------------------------------------
-To use ``pyduofern`` within [Homeassistant](https://home-assistant.io/), add the ``custom_components`` from https://github.com/gluap/pyduofern-hacs>  to
+To use ``pyduofern`` within [Homeassistant](https://home-assistant.io/), add the ``custom_components`` from https://github.com/gluap/pyduofern-hacs  to
 ``~/.homeassistant/`` directory and enable it by adding the following to your ``configuration.yaml``::
 
     duofern:
