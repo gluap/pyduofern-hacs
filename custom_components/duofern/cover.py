@@ -73,6 +73,13 @@ class DuofernShutter(CoverEntity):
     def supported_features(self):
         return SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_SET_POSITION | SUPPORT_STOP
 
+    @property
+    def icon(self):
+        if self.is_closed:
+            return "mdi:window-shutter"
+        else:
+            return "mdi:window-shutter-open"
+
     def open_cover(self):
         """roll up cover"""
         self._stick.command(self._id, "up")
