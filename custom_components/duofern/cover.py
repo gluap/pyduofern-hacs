@@ -47,6 +47,20 @@ class DuofernShutter(CoverEntity):
         hass.data[DOMAIN]['devices'][id] = self
 
     @property
+    def device_info(self):
+        return {
+            "identifiers": {
+                # Serial numbers are unique identifiers within a specific domain
+                (DOMAIN, self.unique_id)
+            },
+            "name": self.name,
+            "manufacturer": "Rademacher",
+            "model": "Duofern device",
+            "sw_version": "unknown",
+            "via_device": None
+        }
+
+    @property
     def name(self):
         return self._name
 
