@@ -106,9 +106,9 @@ def setup(hass, config):
                     try:
                         device.schedule_update_ha_state(True) # Trigger update on the updated entity
                     except AssertionError:
-                        _LOGGER.warning("Update callback called before HA is ready") # Trying to update before HA is ready
+                        _LOGGER.info("Update callback called before HA is ready") # Trying to update before HA is ready
             except KeyError:
-                _LOGGER.warning("Update callback called on unknown device id") # Ignore invalid device ids
+                _LOGGER.info("Update callback called on unknown device id") # Ignore invalid device ids
 
     stick.add_updates_callback(update_callback)
 
