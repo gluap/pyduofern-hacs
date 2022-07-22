@@ -102,11 +102,10 @@ def setup(hass, config):
         if id is not None:
             try:
                 device = hass.data[DOMAIN]['devices'][id] # Get device by id
-                if not device.should_poll: # Only trigger update if this entity is not polling
-                    try:
-                        device.schedule_update_ha_state(True) # Trigger update on the updated entity
-                    except AssertionError:
-                        _LOGGER.info("Update callback called before HA is ready") # Trying to update before HA is ready
+                try:
+                    device.schedule_update_ha_state(True) # Trigger update on the updated entity
+                except AssertionError:
+                    _LOGGER.info("Update callback called before HA is ready") # Trying to update before HA is ready
             except KeyError:
                 _LOGGER.info("Update callback called on unknown device id") # Ignore invalid device ids
 
