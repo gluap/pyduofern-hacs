@@ -101,6 +101,7 @@ def setup(hass, config):
     def update_callback(id, key, value):
         if id is not None:
             try:
+                _LOGGER.info(f"scheduling update for {id}")
                 device = hass.data[DOMAIN]['devices'][id] # Get device by id
                 try:
                     device.schedule_update_ha_state(True) # Trigger update on the updated entity

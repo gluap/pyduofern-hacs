@@ -105,7 +105,9 @@ class DuofernShutter(CoverEntity):
         (no new data needs to be fetched, the stick updates itsself in a thread)
         (not the best style for homeassistant, I know. I'll port to asyncio if I find the time)
         """
+        _LOGGER.info("updating state")
         try:
             self._state = 100 - self._stick.duofern_parser.modules['by_code'][self._id]['position']
         except KeyError:
             self._state = None
+        _LOGGER.info(f"{self._id} state is now {self._state}")
