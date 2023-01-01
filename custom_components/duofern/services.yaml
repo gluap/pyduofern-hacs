@@ -9,3 +9,11 @@ start_pairing:
 
 sync_devices:
   description: re-sync devices (trigger after pairing)
+
+dump_device_state:
+  description: dump state of all known devices as a warning. State reflects state considering all 
+    messages received from devices (independent from homeassistant device state). 
+    Purpose is to debug whether there's a discrepancy with state reflected in Homeassistant.
+
+ask_for_update:
+  description: ask all devices for an update (in case of missed radio transmissions)

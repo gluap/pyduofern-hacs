@@ -44,6 +44,7 @@ class DuofernShutter(CoverEntity):
         self._name = desc
         self._state = None
         self._stick = stick
+        self._openclose = 'stop'
         hass.data[DOMAIN]['devices'][id] = self
 
     @property
@@ -75,6 +76,10 @@ class DuofernShutter(CoverEntity):
 
     @property
     def icon(self):
+        if self.is_opening:
+            return 'mdi:arrow-up-bold'
+        if self.is_closing:
+            return 'mdi:arrow-down-bold'
         if self.is_closed:
             return "mdi:window-shutter"
         else:
@@ -92,6 +97,14 @@ class DuofernShutter(CoverEntity):
         """stop cover"""
         self._stick.command(self._id, "stop")
 
+    @property
+    def is_opening(self):
+        return self._openclose == 'up'
+
+    @property
+    def is_closing(self):
+        return self._openclose == 'down'
+
     def set_cover_position(self, **kwargs):
         """set position (100-position to make the default intuitive: 0%=closed, 100%=open"""
         position = kwargs.get(ATTR_POSITION)
@@ -108,6 +121,7 @@ class DuofernShutter(CoverEntity):
         _LOGGER.info("updating state")
         try:
             self._state = 100 - self._stick.duofern_parser.modules['by_code'][self._id]['position']
+            self._openclose = self._stick.duofern_parser.modules['by_code'][self._id]['moving']
         except KeyError:
             self._state = None
         _LOGGER.info(f"{self._id} state is now {self._state}")

@@ -90,6 +90,16 @@ def setup(hass, config):
     hass.services.register(DOMAIN, 'sync_devices', sync_devices)
     hass.services.register(DOMAIN, 'clean_config', clean_config)
 
+    def dump_device_state(call):
+        _LOGGER.warning(hass.data[DOMAIN]['stick'].duofern_parser.modules)
+    hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
+
+    def update_device_state(call):
+        for module_id in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys():
+            hass.data[DOMAIN]['stick'].command(module_id, 'getStatus')
+    hass.services.register(DOMAIN, 'update_device_state', update_device_state)
+
+
     def refresh(call):
         _LOGGER.warning(call)
         for _component in DUOFERN_COMPONENTS:
