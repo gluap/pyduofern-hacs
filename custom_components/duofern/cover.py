@@ -33,6 +33,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     to_add = [DuofernShutter(device['id'], device['name'], stick, hass) for device in stick.config['devices'] if
              is_shutter(device['id']) and not device['id'] in hass.data[DOMAIN]['devices'].keys()]
     add_devices(to_add)
+    for device in to_add:
+        hass.data[DOMAIN]['devices'][device._id] = device
 
 
 class DuofernShutter(CoverEntity):
@@ -45,7 +47,6 @@ class DuofernShutter(CoverEntity):
         self._state = None
         self._stick = stick
         self._openclose = 'stop'
-        hass.data[DOMAIN]['devices'][id] = self
 
     @property
     def name(self):

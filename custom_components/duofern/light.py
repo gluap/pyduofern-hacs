@@ -36,14 +36,20 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
         if device['id'].startswith('46') or device['id'].startswith('48'):
             if device['id'] in hass.data[DOMAIN]['devices'].keys():
                 continue
-            add_devices([DuofernLight(device['id'], device['name'], stick, hass)])
+
+            device = DuofernLight(device['id'], device['name'], stick, hass)
+            add_devices([device])
+            hass.data[DOMAIN]['devices'][device._id] = device
 
         if device['id'].startswith('43'):
             for channel in [1,2]:
                 chanNo = "{:02x}".format(channel)
                 if device['id']+chanNo in hass.data[DOMAIN]['devices'].keys():
                     continue
-                add_devices([DuofernLight(device['id'], device['name'], stick, hass, channel=channel)])
+
+                device = DuofernLight(device['id'], device['name'], stick, hass, channel=channel)
+                add_devices([device])
+                hass.data[DOMAIN]['devices'][device._id] = device
 
 
 class DuofernLight(LightEntity):
@@ -61,7 +67,6 @@ class DuofernLight(LightEntity):
         self._state = None
         self._stick = stick
         self._channel = channel
-        hass.data[DOMAIN]['devices'][self._id] = self
 
     @property
     def name(self):

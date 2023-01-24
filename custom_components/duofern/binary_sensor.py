@@ -37,7 +37,9 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
             if device['id'] in hass.data[DOMAIN]['devices'].keys(): # Check if Home Assistant already has this device
                 continue
 
-            add_entities([DuofernSmokeDetector(device['id'], device['name'], stick, hass)]) # Add new binary sensor for smoke detectors
+            device = DuofernSmokeDetector(device['id'], device['name'], stick, hass)
+            add_entities([device]) # Add new binary sensor for smoke detectors
+            hass.data[DOMAIN]['devices'][device._id] = device # Add device to our domain
 
 
 class DuofernSmokeDetector(BinarySensorEntity):
@@ -59,7 +61,6 @@ class DuofernSmokeDetector(BinarySensorEntity):
         self._battery_level = None # Holds the battery level of the smoke detector
         self._stick = stick # Hold an instance of the Duofern stick
         self._channel = channel
-        hass.data[DOMAIN]['devices'][self._id] = self # Add device to our domain
 
     @property
     def name(self):
