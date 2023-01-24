@@ -90,6 +90,16 @@ def setup(hass, config):
     hass.services.register(DOMAIN, 'sync_devices', sync_devices)
     hass.services.register(DOMAIN, 'clean_config', clean_config)
 
+    def dump_device_state(call):
+        _LOGGER.warning(hass.data[DOMAIN]['stick'].duofern_parser.modules)
+    hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
+
+    def update_device_state(call):
+        for module_id in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys():
+            hass.data[DOMAIN]['stick'].command(module_id, 'getStatus')
+    hass.services.register(DOMAIN, 'update_device_state', update_device_state)
+
+
     def refresh(call):
         _LOGGER.warning(call)
         for _component in DUOFERN_COMPONENTS:
@@ -101,14 +111,14 @@ def setup(hass, config):
     def update_callback(id, key, value):
         if id is not None:
             try:
+                _LOGGER.info(f"scheduling update for {id}")
                 device = hass.data[DOMAIN]['devices'][id] # Get device by id
-                if not device.should_poll: # Only trigger update if this entity is not polling
-                    try:
-                        device.async_schedule_update_ha_state(True) # Trigger update on the updated entity
-                    except AssertionError:
-                        _LOGGER.warning("Update callback called before HA is ready") # Trying to update before HA is ready
+                try:
+                    device.schedule_update_ha_state(True) # Trigger update on the updated entity
+                except AssertionError:
+                    _LOGGER.info("Update callback called before HA is ready") # Trying to update before HA is ready
             except KeyError:
-                _LOGGER.warning("Update callback called on unknown device id") # Ignore invalid device ids
+                _LOGGER.info("Update callback called on unknown device id") # Ignore invalid device ids
 
     stick.add_updates_callback(update_callback)
 

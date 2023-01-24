@@ -4,7 +4,14 @@ import logging
 # found advice in the homeassistant creating components manual
 # https://home-assistant.io/developers/creating_components/
 # Import the device class from the component that you want to support
-from homeassistant.components.cover import ATTR_POSITION, CoverEntity
+from homeassistant.components.cover import (
+    ATTR_POSITION,
+    CoverEntity,
+    SUPPORT_OPEN,
+    SUPPORT_CLOSE,
+    SUPPORT_SET_POSITION,
+    SUPPORT_STOP
+)
 
 from .const import DOMAIN
 
@@ -37,6 +44,7 @@ class DuofernShutter(CoverEntity):
         self._name = desc
         self._state = None
         self._stick = stick
+        self._openclose = 'stop'
         hass.data[DOMAIN]['devices'][id] = self
 
     @property
@@ -56,11 +64,26 @@ class DuofernShutter(CoverEntity):
     @property
     def should_poll(self):
         """Whether this entity should be polled or uses subscriptions"""
-        return False # TODO: Add config option for subscriptions over polling
+        return True # TODO: Add config option for subscriptions over polling
 
     @property
     def unique_id(self):
         return self._id
+    
+    @property
+    def supported_features(self):
+        return SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_SET_POSITION | SUPPORT_STOP
+
+    @property
+    def icon(self):
+        if self.is_opening:
+            return 'mdi:arrow-up-bold'
+        if self.is_closing:
+            return 'mdi:arrow-down-bold'
+        if self.is_closed:
+            return "mdi:window-shutter"
+        else:
+            return "mdi:window-shutter-open"
 
     def open_cover(self):
         """roll up cover"""
@@ -73,6 +96,14 @@ class DuofernShutter(CoverEntity):
     def stop_cover(self):
         """stop cover"""
         self._stick.command(self._id, "stop")
+
+    @property
+    def is_opening(self):
+        return self._openclose == 'up'
+
+    @property
+    def is_closing(self):
+        return self._openclose == 'down'
 
     def set_cover_position(self, **kwargs):
         """set position (100-position to make the default intuitive: 0%=closed, 100%=open"""
@@ -87,7 +118,10 @@ class DuofernShutter(CoverEntity):
         (no new data needs to be fetched, the stick updates itsself in a thread)
         (not the best style for homeassistant, I know. I'll port to asyncio if I find the time)
         """
+        _LOGGER.info("updating state")
         try:
             self._state = 100 - self._stick.duofern_parser.modules['by_code'][self._id]['position']
+            self._openclose = self._stick.duofern_parser.modules['by_code'][self._id]['moving']
         except KeyError:
             self._state = None
+        _LOGGER.info(f"{self._id} state is now {self._state}")

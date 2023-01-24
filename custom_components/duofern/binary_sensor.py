@@ -93,7 +93,7 @@ class DuofernSmokeDetector(BinarySensorEntity):
     @property
     def should_poll(self):
         """Whether this entity should be polled or uses subscriptions"""
-        return False # TODO: Add config option for subscriptions over polling
+        return True # TODO: Add config option for subscriptions over polling
 
     @property
     def unique_id(self):

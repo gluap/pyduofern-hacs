@@ -25,7 +25,7 @@ Setting up pyduofern in hacs
 
 Setup with homeassistant core (no Homeassistant OS)
 ---------------------------------------------------
-To use ``pyduofern`` within `Homeassistant <https://home-assistant.io/>`_, add the ``custom_components`` from `<https://github.com/gluap/pyduofern-hacs>`_  from the examples  to
+To use ``pyduofern`` within [Homeassistant](https://home-assistant.io/), add the ``custom_components`` from https://github.com/gluap/pyduofern-hacs  to
 ``~/.homeassistant/`` directory and enable it by adding the following to your ``configuration.yaml``::
 
     duofern:
@@ -41,7 +41,7 @@ To use ``pyduofern`` within `Homeassistant <https://home-assistant.io/>`_, add t
 
 ### Usage
 
-There are two services you can call via the service interface:
+There are some services you can call via the service interface:
 
 ``duofern.start_pairing`` starts the pairing mode for a given number of seconds.
 
@@ -53,3 +53,10 @@ There are two services you can call via the service interface:
 
 Please use the renaming feature in the homeassistant GUI to arrive at human readable
 names for your deices.
+
+``duofern.update_device_state``
+
+Ask all duofern devices to re-send their state in case. Can be used in setups where RF is finnicky.
+
+``duofern.dump_device_state``
+Dump the current last received state for all duofern modules as a warning level message to the log. This reflects the current state of all RF messages received from devices - What's not here wasn't received by the stick or came in garbled.
