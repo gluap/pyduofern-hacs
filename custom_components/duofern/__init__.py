@@ -113,17 +113,20 @@ def setup(hass, config):
             try:
                 _LOGGER.info(f"scheduling update for {id}")
                 device = hass.data[DOMAIN]['devices'][id] # Get device by id
-                try:
-                    device.schedule_update_ha_state(True) # Trigger update on the updated entity
-                except AssertionError:
-                    _LOGGER.info("Update callback called before HA is ready") # Trying to update before HA is ready
+                if device.enabled:
+                    try:
+                        device.schedule_update_ha_state(True) # Trigger update on the updated entity
+                    except AssertionError:
+                        _LOGGER.info("Update callback called before HA is ready") # Trying to update before HA is ready
             except KeyError:
                 _LOGGER.info("Update callback called on unknown device id") # Ignore invalid device ids
 
     stick.add_updates_callback(update_callback)
 
-    time.sleep(5) # Wait for 5 seconds so HA can get our entities ready so we don't miss any updates (there are probably nicer ways to do this)
-    stick.start() # Start the stick after 5 seconds
+    def started_callback(event):
+        stick.start() # Start the stick when ha is ready
+    
+    hass.bus.listen("homeassistant_started", started_callback)
 
     return True
 
