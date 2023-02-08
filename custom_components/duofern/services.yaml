@@ -16,4 +16,11 @@ dump_device_state:
     Purpose is to debug whether there's a discrepancy with state reflected in Homeassistant.
 
 ask_for_update:
-  description: ask all devices for an update (in case of missed radio transmissions)
+  description: ask the specified device for an update (in case of missed radio transmissions)
+  fields:
+    device_id:
+      description: id of device to ask for an update
+      selector:
+        entity:
+          multiple: false
+          integration: duofern

@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
@@ -30,6 +31,10 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
 
 PAIRING_SCHEMA = vol.Schema({
     vol.Optional('timeout', default=30): cv.positive_int,
+})
+
+UPDATE_SCHEMA = vol.Schema({
+    vol.Required('device_id', default=None): cv.string,
 })
 
 
@@ -94,10 +99,21 @@ def setup(hass, config):
         _LOGGER.warning(hass.data[DOMAIN]['stick'].duofern_parser.modules)
     hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
 
-    def update_device_state(call):
-        for module_id in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys():
-            hass.data[DOMAIN]['stick'].command(module_id, 'getStatus')
-    hass.services.register(DOMAIN, 'update_device_state', update_device_state)
+    def ask_for_update(call):
+        try:
+            hass_device_id = call.data.get('device_id', None)
+            device_id = re.sub(r"[^\.]*.([0-9a-fA-F]+)", "\\1", hass_device_id) if hass_device_id is not None else None
+        except Exception:
+            _LOGGER.exception(f"exception while getting device id {call}, {call.data}")
+            raise
+        if device_id is None:
+            _LOGGER.warning(f"device_id missing from call {call.data}")
+            return
+        if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
+            _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}")
+            return
+        hass.data[DOMAIN]['stick'].command(device_id, 'getStatus')
+    hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
 
 
     def refresh(call):

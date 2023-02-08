@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
@@ -25,13 +26,14 @@ SHUTTER_IDS = {"40", "41", "42", "47", "49", "4b", "4c", "4e", "70", "61"}
 def is_shutter(id):
     return any([id.startswith(i) for i in SHUTTER_IDS])
 
+
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the Awesome Light platform."""
 
     stick = hass.data[DOMAIN]['stick']
 
     to_add = [DuofernShutter(device['id'], device['name'], stick, hass) for device in stick.config['devices'] if
-             is_shutter(device['id']) and not device['id'] in hass.data[DOMAIN]['devices'].keys()]
+              is_shutter(device['id']) and not device['id'] in hass.data[DOMAIN]['devices'].keys()]
     add_devices(to_add)
 
 
@@ -46,6 +48,7 @@ class DuofernShutter(CoverEntity):
         self._stick = stick
         self._openclose = 'stop'
         hass.data[DOMAIN]['devices'][id] = self
+        self._last_update_time = datetime.datetime.now()
 
     @property
     def name(self):
@@ -64,12 +67,12 @@ class DuofernShutter(CoverEntity):
     @property
     def should_poll(self):
         """Whether this entity should be polled or uses subscriptions"""
-        return True # TODO: Add config option for subscriptions over polling
+        return True  # TODO: Add config option for subscriptions over polling
 
     @property
     def unique_id(self):
         return self._id
-    
+
     @property
     def supported_features(self):
         return SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_SET_POSITION | SUPPORT_STOP
@@ -124,4 +127,6 @@ class DuofernShutter(CoverEntity):
             self._openclose = self._stick.duofern_parser.modules['by_code'][self._id]['moving']
         except KeyError:
             self._state = None
+        if datetime.datetime.now() - self._last_update_time > datetime.timedelta(minutes=5):
+            self._stick.command(self._id, 'getStatus')
         _LOGGER.info(f"{self._id} state is now {self._state}")
