@@ -49,6 +49,7 @@ class DuofernShutter(CoverEntity):
         self._openclose = 'stop'
         hass.data[DOMAIN]['devices'][id] = self
         self._last_update_time = datetime.datetime.now()
+        self._updating_interval = 5
 
     @property
     def name(self):
@@ -127,6 +128,6 @@ class DuofernShutter(CoverEntity):
             self._openclose = self._stick.duofern_parser.modules['by_code'][self._id]['moving']
         except KeyError:
             self._state = None
-        if datetime.datetime.now() - self._last_update_time > datetime.timedelta(minutes=5):
+        if datetime.datetime.now() - self._last_update_time > datetime.timedelta(minutes=self._updating_interval):
             self._stick.command(self._id, 'getStatus')
         _LOGGER.info(f"{self._id} state is now {self._state}")
