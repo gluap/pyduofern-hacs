@@ -1,7 +1,7 @@
 # Describes the format for available Wink services
 
 start_pairing:
-  description: Pair duofern devices. Remember: There is no pairing UI. To pick up the newly paired devices later, you need to call sync_devices and possibly restart HA.
+  description: Pair duofern devices. Remember -  There is no pairing UI. To pick up the newly paired devices later, you need to call sync_devices and possibly restart HA.
   fields:
     timeout:
       description: timeout in seconds
