@@ -127,7 +127,7 @@ def setup(hass, config):
     def update_callback(id, key, value):
         if id is not None:
             try:
-                _LOGGER.info(f"scheduling update for {id}")
+                _LOGGER.info(f"Updatecallback for {id}")
                 device = hass.data[DOMAIN]['devices'][id] # Get device by id
                 if device.enabled:
                     try:

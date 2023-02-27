@@ -5,6 +5,9 @@ import logging
 # found advice in the homeassistant creating components manual
 # https://home-assistant.io/developers/creating_components/
 # Import the device class from the component that you want to support
+
+from homeassistant.helpers.entity import DeviceInfo
+
 from homeassistant.components.cover import (
     ATTR_POSITION,
     CoverEntity,
@@ -130,4 +133,5 @@ class DuofernShutter(CoverEntity):
             self._state = None
         if datetime.datetime.now() - self._last_update_time > datetime.timedelta(minutes=self._updating_interval):
             self._stick.command(self._id, 'getStatus')
+            self._last_update_time = datetime.datetime.now()
         _LOGGER.info(f"{self._id} state is now {self._state}")
