@@ -4,9 +4,11 @@ import re
 import time
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
+from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.helpers import discovery
+from homeassistant.helpers.typing import ConfigType
 
 # found advice in the homeassistant creating components manual
 # https://home-assistant.io/developers/creating_components/
@@ -38,7 +40,7 @@ UPDATE_SCHEMA = vol.Schema({
 })
 
 
-def setup(hass, config):
+def setup(hass: HomeAssistant, config: ConfigType):
     """Setup the Awesome Light platform."""
 
     # Assign configuration variables. The configuration check takes care they are
@@ -46,9 +48,9 @@ def setup(hass, config):
 
     from pyduofern.duofern_stick import DuofernStickThreaded
 
-    newstyle_config = hass.config_entries.async_entries(DOMAIN)
-    if len(newstyle_config) > 0:
-        newstyle_config = newstyle_config[0]
+    newstyle_config_entries = hass.config_entries.async_entries(DOMAIN)
+    if len(newstyle_config_entries) > 0:
+        newstyle_config = newstyle_config_entries[0]
         if newstyle_config:
             serial_port = newstyle_config.data['serial_port']
             code = newstyle_config.data['code']
