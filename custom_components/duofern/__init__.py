@@ -4,11 +4,13 @@ import re
 import time
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.helpers import discovery
 from homeassistant.helpers.typing import ConfigType
+
+from pyduofern.duofern_stick import DuofernStickThreaded
 
 # found advice in the homeassistant creating components manual
 # https://home-assistant.io/developers/creating_components/
@@ -31,14 +33,6 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
 }),
 }, extra=vol.ALLOW_EXTRA)
 
-PAIRING_SCHEMA = vol.Schema({
-    vol.Optional('timeout', default=30): cv.positive_int,
-})
-
-UPDATE_SCHEMA = vol.Schema({
-    vol.Required('device_id', default=None): cv.string,
-})
-
 
 def setup(hass: HomeAssistant, config: ConfigType):
     """Setup the Awesome Light platform."""
@@ -46,7 +40,6 @@ def setup(hass: HomeAssistant, config: ConfigType):
     # Assign configuration variables. The configuration check takes care they are
     # present.
 
-    from pyduofern.duofern_stick import DuofernStickThreaded
 
     newstyle_config_entries = hass.config_entries.async_entries(DOMAIN)
     if len(newstyle_config_entries) > 0:
@@ -73,51 +66,8 @@ def setup(hass: HomeAssistant, config: ConfigType):
     # Setup connection with devices/cloud
     stick = hass.data[DOMAIN]['stick']
 
-    def start_pairing(call):
-        _LOGGER.warning("start pairing")
-        hass.data[DOMAIN]['stick'].pair(call.data.get('timeout', 60))
-
-    def start_unpairing(call):
-        _LOGGER.warning("start pairing")
-        hass.data[DOMAIN]['stick'].unpair(call.data.get('timeout', 60))
-
-    hass.services.register(DOMAIN, 'start_pairing', start_pairing, PAIRING_SCHEMA)
-    hass.services.register(DOMAIN, 'start_unpairing', start_unpairing, PAIRING_SCHEMA)
-
-    def sync_devices(call):
-        stick.sync_devices()
-        _LOGGER.warning(call)
-        for _component in DUOFERN_COMPONENTS:
-            discovery.load_platform(hass, _component, DOMAIN, {}, config)
-
-    def clean_config(call):
-        stick.clean_config()
-        stick.sync_devices()
-
-    hass.services.register(DOMAIN, 'sync_devices', sync_devices)
-    hass.services.register(DOMAIN, 'clean_config', clean_config)
-
-    def dump_device_state(call):
-        _LOGGER.warning(hass.data[DOMAIN]['stick'].duofern_parser.modules)
-    hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
-
-    def ask_for_update(call):
-        try:
-            hass_device_id = call.data.get('device_id', None)
-            device_id = re.sub(r"[^\.]*.([0-9a-fA-F]+)", "\\1", hass_device_id) if hass_device_id is not None else None
-        except Exception:
-            _LOGGER.exception(f"exception while getting device id {call}, {call.data}")
-            raise
-        if device_id is None:
-            _LOGGER.warning(f"device_id missing from call {call.data}")
-            return
-        if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
-            _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}")
-            return
-        hass.data[DOMAIN]['stick'].command(device_id, 'getStatus')
-    hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
-
-
+    _registerServices(hass, stick, config)
+        
     def refresh(call):
         _LOGGER.warning(call)
         for _component in DUOFERN_COMPONENTS:
@@ -147,6 +97,58 @@ def setup(hass: HomeAssistant, config: ConfigType):
     hass.bus.listen("homeassistant_started", started_callback)
 
     return True
+
+def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, config: ConfigType) -> None:
+    def start_pairing(call: ServiceCall) -> None:
+        _LOGGER.warning("start pairing")
+        hass.data[DOMAIN]['stick'].pair(call.data.get('timeout', 60))
+
+    def start_unpairing(call: ServiceCall) -> None:
+        _LOGGER.warning("start pairing")
+        hass.data[DOMAIN]['stick'].unpair(call.data.get('timeout', 60))
+
+    def sync_devices(call: ServiceCall) -> None:
+        stick.sync_devices()
+        _LOGGER.warning(call)
+        for _component in DUOFERN_COMPONENTS:
+            discovery.load_platform(hass, _component, DOMAIN, {}, config)
+
+    def dump_device_state(call: ServiceCall) -> None:
+        _LOGGER.warning(hass.data[DOMAIN]['stick'].duofern_parser.modules)
+
+    def clean_config(call: ServiceCall) -> None:
+        stick.clean_config()
+        stick.sync_devices()
+
+    def ask_for_update(call: ServiceCall) -> None:
+        try:
+            hass_device_id = call.data.get('device_id', None)
+            device_id = re.sub(r"[^\.]*.([0-9a-fA-F]+)", "\\1", hass_device_id) if hass_device_id is not None else None
+        except Exception:
+            _LOGGER.exception(f"exception while getting device id {call}, {call.data}")
+            raise
+        if device_id is None:
+            _LOGGER.warning(f"device_id missing from call {call.data}")
+            return
+        if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
+            _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}")
+            return
+        hass.data[DOMAIN]['stick'].command(device_id, 'getStatus')
+
+    PAIRING_SCHEMA = vol.Schema({
+        vol.Optional('timeout', default=30): cv.positive_int,
+    })
+
+    UPDATE_SCHEMA = vol.Schema({
+        vol.Required('device_id', default=None): cv.string,
+    })
+
+    hass.services.register(DOMAIN, 'start_pairing', start_pairing, PAIRING_SCHEMA)
+    hass.services.register(DOMAIN, 'start_unpairing', start_unpairing, PAIRING_SCHEMA)
+    hass.services.register(DOMAIN, 'sync_devices', sync_devices)
+    hass.services.register(DOMAIN, 'clean_config', clean_config)
+    hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
+    hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
 
 
 async def async_setup_entry(hass, entry):
