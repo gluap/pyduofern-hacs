@@ -3,9 +3,9 @@ import logging
 from typing import List
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.entity import DeviceInfo
 
 from homeassistant.components.button import ButtonEntity
 
@@ -16,11 +16,11 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-def setup_platform(
+async def async_setup_entry(
     hass: HomeAssistant,
-    config: ConfigType,
-    add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None) -> None:
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Setup the Duofern cover platform."""
 
     stick = hass.data[DOMAIN]['stick']
@@ -39,7 +39,7 @@ def setup_platform(
         if entityId not in alreadyAddedEntityIds:        
             to_add.append(DuofernShutterToggleButton(duofernId, stick))
 
-    add_entities(to_add)
+    async_add_entities(to_add)
 
 class DuofernShutterToggleButton(ButtonEntity):
     def __init__(self, duofernId: str, stick: DuofernStickThreaded):

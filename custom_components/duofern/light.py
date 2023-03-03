@@ -3,7 +3,7 @@ import math
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import voluptuous as vol
 # found advice in the homeassistant creating components manual
@@ -29,11 +29,11 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-def setup_platform(
+async def async_setup_entry(
     hass: HomeAssistant,
-    config: ConfigType,
-    add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None) -> None:
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Setup the Awesome Light platform."""
 
     # Assign configuration variables. The configuration check takes care they are
@@ -46,14 +46,14 @@ def setup_platform(
         if device['id'].startswith('46') or device['id'].startswith('48'):
             if device['id'] in hass.data[DOMAIN]['devices'].keys():
                 continue
-            add_entities([DuofernLight(device['id'], device['name'], stick, hass)])
+            async_add_entities([DuofernLight(device['id'], device['name'], stick, hass)])
 
         if device['id'].startswith('43'):
             for channel in [1,2]:
                 chanNo = "{:02x}".format(channel)
                 if device['id']+chanNo in hass.data[DOMAIN]['devices'].keys():
                     continue
-                add_entities([DuofernLight(device['id'], device['name'], stick, hass, channel=channel)])
+                async_add_entities([DuofernLight(device['id'], device['name'], stick, hass, channel=channel)])
 
 
 class DuofernLight(LightEntity):

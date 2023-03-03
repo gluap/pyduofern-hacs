@@ -2,9 +2,11 @@ import logging
 import os
 import re
 import time
+from typing import Any
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.config_entries import ConfigEntry
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.helpers import discovery
@@ -34,49 +36,55 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
 }, extra=vol.ALLOW_EXTRA)
 
 
-def setup(hass: HomeAssistant, config: ConfigType):
-    """Setup the Awesome Light platform."""
+def setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Setup the duofern stick for communicating with the duofern devices via entities"""
+    configEntries = hass.config_entries.async_entries(DOMAIN)
+    if len(configEntries) == 0:
+        _LOGGER.error("Expected one config entry from configuration flow, got less")
+        return False
 
-    # Assign configuration variables. The configuration check takes care they are
-    # present.
+    if len(configEntries) > 1:
+        _LOGGER.error("Expected one config entry from configuration flow, got more")
+        return False
 
+    serial_port = configEntries[0].data['serial_port']
+    code = configEntries[0].data['code']
+    configfile = configEntries[0].data['config_file']
 
-    newstyle_config_entries = hass.config_entries.async_entries(DOMAIN)
-    if len(newstyle_config_entries) > 0:
-        newstyle_config = newstyle_config_entries[0]
-        if newstyle_config:
-            serial_port = newstyle_config.data['serial_port']
-            code = newstyle_config.data['code']
-            configfile = newstyle_config.data['config_file']
+    stick = DuofernStickThreaded(serial_port=serial_port, system_code=code, config_file_json=configfile,
+                                      ephemeral=False)
 
-    elif config.get(DOMAIN) is not None:
-        serial_port = config[DOMAIN].get(CONF_SERIAL_PORT)
-        if serial_port is None:
-            serial_port = "/dev/serial/by-id/usb-Rademacher_DuoFern_USB-Stick_WR04ZFP4-if00-port0"
-        code = config[DOMAIN].get(CONF_CODE, None)
-        if code is None:
-            code = "affe"
-        configfile = config[DOMAIN].get('config_file')
+    _registerServices(hass, stick, configEntries[0])
+    _registerUpdateHassFromStickCallback(hass, stick)
+    _registerStartStickHook(hass, stick)
 
     hass.data[DOMAIN] = {
-        'stick': DuofernStickThreaded(serial_port=serial_port, system_code=code, config_file_json=configfile,
-                                      ephemeral=False),
-        'devices': {}}
+        'stick': stick,
+        'devices': {}
+    }
 
-    # Setup connection with devices/cloud
-    stick = hass.data[DOMAIN]['stick']
+    return True
 
-    _registerServices(hass, stick, config)
-        
-    def refresh(call):
-        _LOGGER.warning(call)
-        for _component in DUOFERN_COMPONENTS:
-            discovery.load_platform(hass, _component, DOMAIN, {}, config)
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Setup the Duofern Config entries (entities, devices, etc...)"""
+    for component in DUOFERN_COMPONENTS:
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(entry, component)
+        )
 
-    for _component in DUOFERN_COMPONENTS:
-        discovery.load_platform(hass, _component, DOMAIN, {}, config)
+    return True
 
-    def update_callback(id, key, value):
+
+
+def _registerStartStickHook(hass: HomeAssistant, stick: DuofernStickThreaded) -> None:
+    def started_callback(event: Any) -> None:
+        stick.start() # Start the stick when ha is ready
+    
+    hass.bus.listen("homeassistant_started", started_callback)
+
+
+def _registerUpdateHassFromStickCallback(hass: HomeAssistant, stick: DuofernStickThreaded) -> None:
+    def update_callback(id: str | None, key: Any, value: Any) -> None:
         if id is not None:
             try:
                 _LOGGER.info(f"Updatecallback for {id}")
@@ -91,14 +99,7 @@ def setup(hass: HomeAssistant, config: ConfigType):
 
     stick.add_updates_callback(update_callback)
 
-    def started_callback(event):
-        stick.start() # Start the stick when ha is ready
-    
-    hass.bus.listen("homeassistant_started", started_callback)
-
-    return True
-
-def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, config: ConfigType) -> None:
+def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: ConfigEntry) -> None:
     def start_pairing(call: ServiceCall) -> None:
         _LOGGER.warning("start pairing")
         hass.data[DOMAIN]['stick'].pair(call.data.get('timeout', 60))
@@ -110,8 +111,7 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, config: 
     def sync_devices(call: ServiceCall) -> None:
         stick.sync_devices()
         _LOGGER.warning(call)
-        for _component in DUOFERN_COMPONENTS:
-            discovery.load_platform(hass, _component, DOMAIN, {}, config)
+        hass.config_entries.async_setup_platforms(entry, DUOFERN_COMPONENTS)
 
     def dump_device_state(call: ServiceCall) -> None:
         _LOGGER.warning(hass.data[DOMAIN]['stick'].duofern_parser.modules)
@@ -149,7 +149,3 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, config: 
     hass.services.register(DOMAIN, 'clean_config', clean_config)
     hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
     hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
-
-
-async def async_setup_entry(hass, entry):
-    return True

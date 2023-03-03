@@ -3,6 +3,9 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity import DeviceInfo
 import homeassistant.helpers.config_validation as cv
 
 from homeassistant.components.binary_sensor import (
@@ -28,7 +31,11 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional('code', default=None): cv.string,
 })
 
-def setup_platform(hass: HomeAssistant, config, add_entities, discovery_info=None):
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Setup the Duofern binary sensors pltaform"""
 
     # Get the Duofern stick instance
@@ -40,7 +47,7 @@ def setup_platform(hass: HomeAssistant, config, add_entities, discovery_info=Non
             if device['id'] in hass.data[DOMAIN]['devices'].keys(): # Check if Home Assistant already has this device
                 continue
 
-            add_entities([DuofernSmokeDetector(device['id'], device['name'], stick, hass)]) # Add new binary sensor for smoke detectors
+            async_add_entities([DuofernSmokeDetector(device['id'], device['name'], stick, hass)]) # Add new binary sensor for smoke detectors
 
 
 class DuofernSmokeDetector(BinarySensorEntity):

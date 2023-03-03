@@ -1,7 +1,7 @@
 import datetime
 import logging
 
-from typing import Literal, List
+from typing import Literal, List, Set, cast
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
 # found advice in the homeassistant creating components manual
@@ -9,9 +9,9 @@ from typing import Literal, List
 # Import the device class from the component that you want to support
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.entity import DeviceInfo
 
 from pyduofern.duofern_stick import DuofernStickThreaded
 
@@ -38,18 +38,18 @@ def is_shutter(id: str)-> bool:
     return any([id.startswith(i) for i in SHUTTER_IDS])
 
 
-def setup_platform(
+async def async_setup_entry(
     hass: HomeAssistant,
-    config: ConfigType,
-    add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None) -> None:
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Setup the Awesome Light platform."""
 
     stick: DuofernStickThreaded = hass.data[DOMAIN]['stick']
 
     to_add:List[DuofernShutter] = [DuofernShutter(device['id'], device['name'], stick, hass) for device in stick.config['devices'] if
               is_shutter(device['id']) and not device['id'] in hass.data[DOMAIN]['devices'].keys()]
-    add_entities(to_add)
+    async_add_entities(to_add)
 
 
 class DuofernShutter(CoverEntity):
@@ -71,6 +71,23 @@ class DuofernShutter(CoverEntity):
         return self._name
 
     @property
+    def unique_id(self) -> str:
+        return self._id
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return information about the device the entity belongs to group entities to devices"""
+        return {
+            "identifiers": {
+                (DOMAIN, self._id)
+            },
+            "manufacturer": "Rademacher",
+            "name": self.name,
+            "default_manufacturer": "Rademacher",
+            "default_name": "Unkown Duofern Device",
+        } #type: ignore #(We only care about a subset and DeviceInfo doesn't mark the rest as optional)
+
+    @property
     def current_cover_position(self) -> int | None:
         """Return the display name of this cover."""
         return self._state
@@ -84,10 +101,6 @@ class DuofernShutter(CoverEntity):
     def should_poll(self) -> bool:
         """Whether this entity should be polled or uses subscriptions"""
         return True  # TODO: Add config option for subscriptions over polling
-
-    @property
-    def unique_id(self) -> str:
-        return self._id
 
     @property
     def supported_features(self) -> CoverEntityFeature:
