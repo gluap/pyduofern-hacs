@@ -21,6 +21,8 @@ from homeassistant.components.cover import (
     CoverEntityFeature
 )
 
+from custom_components.duofern.domain_data import getDuofernStick, isDeviceSetUp,  saveDeviceAsSetUp
+
 from .const import DOMAIN
 
 # Home Assistant depends on 3rd party packages for API specific code.
@@ -41,24 +43,36 @@ async def async_setup_entry(
 ) -> None:
     """Setup the Awesome Light platform."""
 
-    stick: DuofernStickThreaded = hass.data[DOMAIN]['stick']
+    stick = getDuofernStick(hass)
 
-    to_add:List[DuofernShutter] = [DuofernShutter(device['id'], device['name'], stick, hass) for device in stick.config['devices'] if
-              is_shutter(device['id']) and not device['id'] in hass.data[DOMAIN]['devices'].keys()]
+    to_add:List[DuofernShutter] = []
+    for duofernDevice in stick.config['devices']:
+        duofernId: str = duofernDevice['id']
+        if not is_shutter(duofernId):
+            _LOGGER.info("button: skipping: " + str(duofernId) + " because it is not a shutter")
+            continue
+
+        if isDeviceSetUp(hass, duofernId):
+            _LOGGER.info("button: skipping: " + str(duofernId) + " because it is is already set up")
+            continue
+
+        entity = DuofernShutter(duofernId, duofernDevice['name'], stick)
+        to_add.append(entity)
+        saveDeviceAsSetUp(hass, entity, duofernId)
+    
     async_add_entities(to_add)
 
 
 class DuofernShutter(CoverEntity):
     """Representation of Duofern cover type device."""
 
-    def __init__(self, duofernId: str, desc: str, stick: DuofernStickThreaded, hass: HomeAssistant):
+    def __init__(self, duofernId: str, name: str, stick: DuofernStickThreaded):
         """Initialize the shutter."""
         self._duofernId = duofernId
-        self._name = desc
+        self._name = name
         self._state: int | None = None
         self._stick = stick
         self._openclose: Literal["up", "down", "stop"] = 'stop'
-        hass.data[DOMAIN]['devices'][id] = self
         self._last_update_time = datetime.datetime.now()
         self._updating_interval = 5
 

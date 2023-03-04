@@ -12,6 +12,8 @@ from homeassistant.components.switch import SwitchEntity
 from custom_components.duofern.cover import is_shutter
 from pyduofern.duofern_stick import DuofernStickThreaded
 
+from custom_components.duofern.domain_data import getDuofernStick, isDeviceSetUp, saveDeviceAsSetUp
+
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,18 +25,25 @@ async def async_setup_entry(
 ) -> None:
     """Setup the Duofern switch platform."""
 
-    stick = hass.data[DOMAIN]['stick']
-    alreadyAddedEntityIds = hass.data[DOMAIN]['devices'].keys()
+    stick = getDuofernStick(hass)
+    _LOGGER.info("switch: found: " + str(stick.config['devices']))
+    _LOGGER.info("switch: already added: " + str(stick.config['devices']))
 
     to_add: List[SwitchEntity] = []
     for duofernDevice in stick.config['devices']:
         duofernId: str = duofernDevice['id']
-        if not is_shutter(duofernId) or duofernId not in alreadyAddedEntityIds:
+        subId = "manualMode"
+        if not is_shutter(duofernId):
+            _LOGGER.info("switch: skipping: " + str(duofernId) + " because it is not a shutter")
+            continue
+        
+        if isDeviceSetUp(hass, duofernId, subId):
+            _LOGGER.info("switch: skipping: " + str(duofernId) + " because it is is already set up")
             continue
 
-        entityId = duofernId + "_manual_mode"
-        if entityId not in alreadyAddedEntityIds:        
-            to_add.append(DuofernShutterConfigurableSwitch(duofernId, stick, "manualMode", "Manual Mode", "manual_mode"))
+        switch = DuofernShutterConfigurableSwitch(duofernId, stick, "manualMode", "Manual Mode", "manual_mode")
+        to_add.append(switch)
+        saveDeviceAsSetUp(hass, switch, duofernId, subId)
 
     async_add_entities(to_add)
 

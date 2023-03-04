@@ -12,6 +12,8 @@ from homeassistant.components.button import ButtonEntity
 from custom_components.duofern.cover import is_shutter
 from pyduofern.duofern_stick import DuofernStickThreaded
 
+from custom_components.duofern.domain_data import getDuofernStick, isDeviceSetUp, saveDeviceAsSetUp
+
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,21 +25,27 @@ async def async_setup_entry(
 ) -> None:
     """Setup the Duofern cover platform."""
 
-    stick = hass.data[DOMAIN]['stick']
+    stick = getDuofernStick(hass)
     alreadyAddedEntityIds = hass.data[DOMAIN]['devices'].keys()
 
     to_add: List[ButtonEntity] = []
-    _LOGGER.info("found: " + str(stick.config['devices']))
-    _LOGGER.info("already added: " + str(stick.config['devices']))
+    _LOGGER.info("button: all devices on stick " + str(stick.config['devices']))
     for duofernDevice in stick.config['devices']:
         duofernId: str = duofernDevice['id']
-        if not is_shutter(duofernId) or duofernId not in alreadyAddedEntityIds:
-            _LOGGER.info("skipping: " + str(duofernId))
+        subId = "toggleButton"
+        if not is_shutter(duofernId):
+            _LOGGER.info("button: skipping: " + str(duofernId) + " because it is not a shutter")
+            continue
+
+        if isDeviceSetUp(hass, duofernId, subId):
+            _LOGGER.info("button: skipping: " + str(duofernId) + " because it is is already set up")
             continue
 
         entityId = duofernId + "_toggle"
-        if entityId not in alreadyAddedEntityIds:        
-            to_add.append(DuofernShutterToggleButton(duofernId, stick))
+        if entityId not in alreadyAddedEntityIds:
+            button = DuofernShutterToggleButton(duofernId, stick)
+            to_add.append(button)
+            saveDeviceAsSetUp(hass, button, duofernId, subId)
 
     async_add_entities(to_add)
 

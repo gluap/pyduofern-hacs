@@ -12,6 +12,8 @@ from homeassistant.helpers.typing import ConfigType
 
 from pyduofern.duofern_stick import DuofernStickThreaded
 
+from custom_components.duofern.domain_data import getDuofernStick, setupDomainData
+
 # found advice in the homeassistant creating components manual
 # https://home-assistant.io/developers/creating_components/
 # Import the device class from the component that you want to support
@@ -56,10 +58,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     _registerUpdateHassFromStickCallback(hass, stick)
     _registerStartStickHook(hass, stick)
 
-    hass.data[DOMAIN] = {
-        'stick': stick,
-        'devices': {}
-    }
+    setupDomainData(hass, stick)
 
     return True
 
@@ -100,11 +99,11 @@ def _registerUpdateHassFromStickCallback(hass: HomeAssistant, stick: DuofernStic
 def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: ConfigEntry) -> None:
     def start_pairing(call: ServiceCall) -> None:
         _LOGGER.warning("start pairing")
-        hass.data[DOMAIN]['stick'].pair(call.data.get('timeout', 60))
+        getDuofernStick(hass).pair(call.data.get('timeout', 60))
 
     def start_unpairing(call: ServiceCall) -> None:
         _LOGGER.warning("start pairing")
-        hass.data[DOMAIN]['stick'].unpair(call.data.get('timeout', 60))
+        getDuofernStick(hass).unpair(call.data.get('timeout', 60))
 
     def sync_devices(call: ServiceCall) -> None:
         stick.sync_devices()
@@ -112,7 +111,7 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
         hass.config_entries.async_setup_platforms(entry, DUOFERN_COMPONENTS)
 
     def dump_device_state(call: ServiceCall) -> None:
-        _LOGGER.warning(hass.data[DOMAIN]['stick'].duofern_parser.modules)
+        _LOGGER.warning(getDuofernStick(hass).duofern_parser.modules)
 
     def clean_config(call: ServiceCall) -> None:
         stick.clean_config()
@@ -131,7 +130,7 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
         if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
             _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}")
             return
-        hass.data[DOMAIN]['stick'].command(device_id, 'getStatus')
+        getDuofernStick(hass).command(device_id, 'getStatus')
 
     PAIRING_SCHEMA = vol.Schema({
         vol.Optional('timeout', default=30): cv.positive_int,
