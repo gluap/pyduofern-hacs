@@ -55,9 +55,9 @@ async def async_setup_entry(
 class DuofernShutter(CoverEntity):
     """Representation of Duofern cover type device."""
 
-    def __init__(self, id: str, desc: str, stick: DuofernStickThreaded, hass: HomeAssistant):
+    def __init__(self, duofernId: str, desc: str, stick: DuofernStickThreaded, hass: HomeAssistant):
         """Initialize the shutter."""
-        self._id = id
+        self._duofernId = duofernId
         self._name = desc
         self._state: int | None = None
         self._stick = stick
@@ -72,14 +72,14 @@ class DuofernShutter(CoverEntity):
 
     @property
     def unique_id(self) -> str:
-        return self._id
+        return self._duofernId
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return information about the device the entity belongs to group entities to devices"""
         return {
             "identifiers": {
-                (DOMAIN, self._id)
+                (DOMAIN, self._duofernId)
             },
             "manufacturer": "Rademacher",
             "name": self.name,
@@ -119,15 +119,15 @@ class DuofernShutter(CoverEntity):
 
     def open_cover(self, **kwargs: None) -> None:
         """roll up cover"""
-        self._stick.command(self._id, "up")
+        self._stick.command(self._duofernId, "up")
 
     def close_cover(self, **kwargs: None) -> None:
         """close cover"""
-        self._stick.command(self._id, "down")
+        self._stick.command(self._duofernId, "down")
 
     def stop_cover(self, **kwargs: None) -> None:
         """stop cover"""
-        self._stick.command(self._id, "stop")
+        self._stick.command(self._duofernId, "stop")
 
     @property
     def is_opening(self) -> bool:
@@ -141,7 +141,7 @@ class DuofernShutter(CoverEntity):
         """set position (100-position to make the default intuitive: 0%=closed, 100%=open"""
         position = kwargs.get(ATTR_POSITION)
         if position is None: return
-        self._stick.command(self._id, "position", 100 - position)
+        self._stick.command(self._duofernId, "position", 100 - position)
 
     def update(self) -> None:
         """Fetch new state data for this cover.
@@ -153,11 +153,11 @@ class DuofernShutter(CoverEntity):
         """
         _LOGGER.info("updating state")
         try:
-            self._state = 100 - self._stick.duofern_parser.modules['by_code'][self._id]['position']
-            self._openclose = self._stick.duofern_parser.modules['by_code'][self._id]['moving']
+            self._state = 100 - self._stick.duofern_parser.modules['by_code'][self._duofernId]['position']
+            self._openclose = self._stick.duofern_parser.modules['by_code'][self._duofernId]['moving']
         except KeyError:
             self._state = None
         if datetime.datetime.now() - self._last_update_time > datetime.timedelta(minutes=self._updating_interval):
-            self._stick.command(self._id, 'getStatus')
+            self._stick.command(self._duofernId, 'getStatus')
             self._last_update_time = datetime.datetime.now()
-        _LOGGER.info(f"{self._id} state is now {self._state}")
+        _LOGGER.info(f"{self._duofernId} state is now {self._state}")
