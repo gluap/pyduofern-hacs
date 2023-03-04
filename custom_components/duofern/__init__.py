@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import time
 from typing import Any
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
@@ -9,7 +8,6 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.config_entries import ConfigEntry
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.helpers import discovery
 from homeassistant.helpers.typing import ConfigType
 
 from pyduofern.duofern_stick import DuofernStickThreaded
@@ -23,7 +21,7 @@ REQUIREMENTS = ['pyduofern==0.34.1']
 
 _LOGGER = logging.getLogger(__name__)
 
-from .const import DOMAIN, DUOFERN_COMPONENTS, CONF_SERIAL_PORT, CONF_CODE
+from .const import DOMAIN, DUOFERN_COMPONENTS
 
 # Validation of the user's configuration
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({

@@ -18,11 +18,7 @@ from pyduofern.duofern_stick import DuofernStickThreaded
 from homeassistant.components.cover import (
     ATTR_POSITION,
     CoverEntity,
-    CoverEntityFeature,
-    SUPPORT_OPEN,
-    SUPPORT_CLOSE,
-    SUPPORT_SET_POSITION,
-    SUPPORT_STOP
+    CoverEntityFeature
 )
 
 from .const import DOMAIN

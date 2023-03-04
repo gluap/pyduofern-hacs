@@ -27,12 +27,9 @@ async def async_setup_entry(
     alreadyAddedEntityIds = hass.data[DOMAIN]['devices'].keys()
 
     to_add: List[SwitchEntity] = []
-    _LOGGER.info("found: " + str(stick.config['devices']))
-    _LOGGER.info("already added: " + str(stick.config['devices']))
     for duofernDevice in stick.config['devices']:
         duofernId: str = duofernDevice['id']
         if not is_shutter(duofernId) or duofernId not in alreadyAddedEntityIds:
-            _LOGGER.info("skipping: " + str(duofernId))
             continue
 
         entityId = duofernId + "_manual_mode"

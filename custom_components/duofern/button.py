@@ -9,7 +9,7 @@ from homeassistant.helpers.entity import DeviceInfo
 
 from homeassistant.components.button import ButtonEntity
 
-from custom_components.duofern.cover import DuofernShutter, is_shutter
+from custom_components.duofern.cover import is_shutter
 from pyduofern.duofern_stick import DuofernStickThreaded
 
 from .const import DOMAIN

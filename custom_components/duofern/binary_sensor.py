@@ -5,7 +5,6 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.entity import DeviceInfo
 import homeassistant.helpers.config_validation as cv
 
 from homeassistant.components.binary_sensor import (
