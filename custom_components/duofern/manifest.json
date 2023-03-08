@@ -7,5 +7,5 @@
   "issue_tracker": "https://github.com/gluap/pyduofern-hacs/issues" ,
   "codeowners": ["@gluap"],
   "requirements": ["pyduofern==0.35.1"],
-  "version": "0.4.3"
+  "version": "0.5.0"
 }
