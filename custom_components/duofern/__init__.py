@@ -1,12 +1,18 @@
 import logging
 import os
 import re
-import time
+from typing import Any
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.config_entries import ConfigEntry
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.helpers import discovery
+from homeassistant.helpers.typing import ConfigType
+
+from pyduofern.duofern_stick import DuofernStickThreaded
+
+from custom_components.duofern.domain_data import getDuofernStick, setupDomainData
 
 # found advice in the homeassistant creating components manual
 # https://home-assistant.io/developers/creating_components/
@@ -17,7 +23,7 @@ REQUIREMENTS = ['pyduofern==0.34.1']
 
 _LOGGER = logging.getLogger(__name__)
 
-from .const import DOMAIN, DUOFERN_COMPONENTS, CONF_SERIAL_PORT, CONF_CODE
+from .const import DOMAIN, DUOFERN_COMPONENTS
 
 # Validation of the user's configuration
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
@@ -29,102 +35,53 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
 }),
 }, extra=vol.ALLOW_EXTRA)
 
-PAIRING_SCHEMA = vol.Schema({
-    vol.Optional('timeout', default=30): cv.positive_int,
-})
 
-UPDATE_SCHEMA = vol.Schema({
-    vol.Required('device_id', default=None): cv.string,
-})
+def setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Setup the duofern stick for communicating with the duofern devices via entities"""
+    configEntries = hass.config_entries.async_entries(DOMAIN)
+    if len(configEntries) == 0:
+        _LOGGER.error("Expected one config entry from configuration flow, got less")
+        return False
 
+    if len(configEntries) > 1:
+        _LOGGER.error("Expected one config entry from configuration flow, got more")
+        return False
 
-def setup(hass, config):
-    """Setup the Awesome Light platform."""
+    serial_port = configEntries[0].data['serial_port']
+    code = configEntries[0].data['code']
+    configfile = configEntries[0].data['config_file']
 
-    # Assign configuration variables. The configuration check takes care they are
-    # present.
+    stick = DuofernStickThreaded(serial_port=serial_port, system_code=code, config_file_json=configfile,
+                                      ephemeral=False)
 
-    from pyduofern.duofern_stick import DuofernStickThreaded
+    _registerServices(hass, stick, configEntries[0])
+    _registerUpdateHassFromStickCallback(hass, stick)
+    _registerStartStickHook(hass, stick)
 
-    newstyle_config = hass.config_entries.async_entries(DOMAIN)
-    if len(newstyle_config) > 0:
-        newstyle_config = newstyle_config[0]
-        if newstyle_config:
-            serial_port = newstyle_config.data['serial_port']
-            code = newstyle_config.data['code']
-            configfile = newstyle_config.data['config_file']
+    setupDomainData(hass, stick)
 
-    elif config.get(DOMAIN) is not None:
-        serial_port = config[DOMAIN].get(CONF_SERIAL_PORT)
-        if serial_port is None:
-            serial_port = "/dev/serial/by-id/usb-Rademacher_DuoFern_USB-Stick_WR04ZFP4-if00-port0"
-        code = config[DOMAIN].get(CONF_CODE, None)
-        if code is None:
-            code = "affe"
-        configfile = config[DOMAIN].get('config_file')
+    return True
 
-    hass.data[DOMAIN] = {
-        'stick': DuofernStickThreaded(serial_port=serial_port, system_code=code, config_file_json=configfile,
-                                      ephemeral=False),
-        'devices': {}}
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Setup the Duofern Config entries (entities, devices, etc...)"""
+    for component in DUOFERN_COMPONENTS:
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(entry, component)
+        )
 
-    # Setup connection with devices/cloud
-    stick = hass.data[DOMAIN]['stick']
-
-    def start_pairing(call):
-        _LOGGER.warning("start pairing")
-        hass.data[DOMAIN]['stick'].pair(call.data.get('timeout', 60))
-
-    def start_unpairing(call):
-        _LOGGER.warning("start pairing")
-        hass.data[DOMAIN]['stick'].unpair(call.data.get('timeout', 60))
-
-    hass.services.register(DOMAIN, 'start_pairing', start_pairing, PAIRING_SCHEMA)
-    hass.services.register(DOMAIN, 'start_unpairing', start_unpairing, PAIRING_SCHEMA)
-
-    def sync_devices(call):
-        stick.sync_devices()
-        _LOGGER.warning(call)
-        for _component in DUOFERN_COMPONENTS:
-            discovery.load_platform(hass, _component, DOMAIN, {}, config)
-
-    def clean_config(call):
-        stick.clean_config()
-        stick.sync_devices()
-
-    hass.services.register(DOMAIN, 'sync_devices', sync_devices)
-    hass.services.register(DOMAIN, 'clean_config', clean_config)
-
-    def dump_device_state(call):
-        _LOGGER.warning(hass.data[DOMAIN]['stick'].duofern_parser.modules)
-    hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
-
-    def ask_for_update(call):
-        try:
-            hass_device_id = call.data.get('device_id', None)
-            device_id = re.sub(r"[^\.]*.([0-9a-fA-F]+)", "\\1", hass_device_id) if hass_device_id is not None else None
-        except Exception:
-            _LOGGER.exception(f"exception while getting device id {call}, {call.data}")
-            raise
-        if device_id is None:
-            _LOGGER.warning(f"device_id missing from call {call.data}")
-            return
-        if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
-            _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}")
-            return
-        hass.data[DOMAIN]['stick'].command(device_id, 'getStatus')
-    hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
+    return True
 
 
-    def refresh(call):
-        _LOGGER.warning(call)
-        for _component in DUOFERN_COMPONENTS:
-            discovery.load_platform(hass, _component, DOMAIN, {}, config)
 
-    for _component in DUOFERN_COMPONENTS:
-        discovery.load_platform(hass, _component, DOMAIN, {}, config)
+def _registerStartStickHook(hass: HomeAssistant, stick: DuofernStickThreaded) -> None:
+    def started_callback(event: Any) -> None:
+        stick.start() # Start the stick when ha is ready
+    
+    hass.bus.listen("homeassistant_started", started_callback)
 
-    def update_callback(id, key, value):
+
+def _registerUpdateHassFromStickCallback(hass: HomeAssistant, stick: DuofernStickThreaded) -> None:
+    def update_callback(id: str | None, key: Any, value: Any) -> None:
         if id is not None:
             try:
                 _LOGGER.info(f"Updatecallback for {id}")
@@ -139,13 +96,53 @@ def setup(hass, config):
 
     stick.add_updates_callback(update_callback)
 
-    def started_callback(event):
-        stick.start() # Start the stick when ha is ready
-    
-    hass.bus.listen("homeassistant_started", started_callback)
+def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: ConfigEntry) -> None:
+    def start_pairing(call: ServiceCall) -> None:
+        _LOGGER.warning("start pairing")
+        getDuofernStick(hass).pair(call.data.get('timeout', 60))
 
-    return True
+    def start_unpairing(call: ServiceCall) -> None:
+        _LOGGER.warning("start pairing")
+        getDuofernStick(hass).unpair(call.data.get('timeout', 60))
 
+    def sync_devices(call: ServiceCall) -> None:
+        stick.sync_devices()
+        _LOGGER.warning(call)
+        hass.config_entries.async_setup_platforms(entry, DUOFERN_COMPONENTS)
 
-async def async_setup_entry(hass, entry):
-    return True
+    def dump_device_state(call: ServiceCall) -> None:
+        _LOGGER.warning(getDuofernStick(hass).duofern_parser.modules)
+
+    def clean_config(call: ServiceCall) -> None:
+        stick.clean_config()
+        stick.sync_devices()
+
+    def ask_for_update(call: ServiceCall) -> None:
+        try:
+            hass_device_id = call.data.get('device_id', None)
+            device_id = re.sub(r"[^\.]*.([0-9a-fA-F]+)", "\\1", hass_device_id) if hass_device_id is not None else None
+        except Exception:
+            _LOGGER.exception(f"exception while getting device id {call}, {call.data}")
+            raise
+        if device_id is None:
+            _LOGGER.warning(f"device_id missing from call {call.data}")
+            return
+        if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
+            _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}")
+            return
+        getDuofernStick(hass).command(device_id, 'getStatus')
+
+    PAIRING_SCHEMA = vol.Schema({
+        vol.Optional('timeout', default=30): cv.positive_int,
+    })
+
+    UPDATE_SCHEMA = vol.Schema({
+        vol.Required('device_id', default=None): cv.string,
+    })
+
+    hass.services.register(DOMAIN, 'start_pairing', start_pairing, PAIRING_SCHEMA)
+    hass.services.register(DOMAIN, 'start_unpairing', start_unpairing, PAIRING_SCHEMA)
+    hass.services.register(DOMAIN, 'sync_devices', sync_devices)
+    hass.services.register(DOMAIN, 'clean_config', clean_config)
+    hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
+    hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
