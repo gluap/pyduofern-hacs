@@ -8,7 +8,7 @@ start_pairing:
       example: 60
 
 sync_devices:
-  description: re-sync devices (trigger after pairing)
+  description: re-sync devices (trigger after pairing, if it does not work, a restart of homeassistant may help)
 
 dump_device_state:
   description: dump state of all known devices as a warning. State reflects state considering all 
