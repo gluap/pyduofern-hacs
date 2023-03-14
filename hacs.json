@@ -1,5 +1,5 @@
 {
   "name": "duofern",
   "domains": ["cover", "light", "binary_sensor"],
-  "homeassistant": "2023.3.2"
+  "homeassistant": "2022.11"
 }
