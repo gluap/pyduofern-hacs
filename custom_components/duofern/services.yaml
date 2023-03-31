@@ -20,7 +20,20 @@ ask_for_update:
   fields:
     device_id:
       description: id of device to ask for an update
+      required: true
       selector:
         entity:
-          multiple: false
+          multiple: true
           integration: duofern
+
+set_update_interval:
+  description: set the automatically broadcasting a "please send an update" interval
+  fields:
+    period_minutes:
+      description: approximate forced refresh interval in minutes - defaults to 5, 0 means never
+      example: 5
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 60

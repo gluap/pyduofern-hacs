@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import DeviceInfo
+from random import randint
 
 from pyduofern.duofern_stick import DuofernStickThreaded
 
@@ -21,7 +22,7 @@ from homeassistant.components.cover import (
     CoverEntityFeature
 )
 
-from custom_components.duofern.domain_data import getDuofernStick, isDeviceSetUp,  saveDeviceAsSetUp
+from custom_components.duofern.domain_data import getDuofernStick, isDeviceSetUp, saveDeviceAsSetUp
 
 from .const import DOMAIN
 
@@ -32,20 +33,20 @@ _LOGGER = logging.getLogger(__name__)
 SHUTTER_IDS = {"40", "41", "42", "47", "49", "4b", "4c", "4e", "70", "61"}
 
 
-def is_shutter(id: str)-> bool:
+def is_shutter(id: str) -> bool:
     return any([id.startswith(i) for i in SHUTTER_IDS])
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Setup the Awesome Light platform."""
 
     stick = getDuofernStick(hass)
 
-    to_add:List[DuofernShutter] = []
+    to_add: List[DuofernShutter] = []
     for duofernDevice in stick.config['devices']:
         duofernId: str = duofernDevice['id']
         if not is_shutter(duofernId):
@@ -59,7 +60,7 @@ async def async_setup_entry(
         entity = DuofernShutter(duofernId, duofernDevice['name'], stick)
         to_add.append(entity)
         saveDeviceAsSetUp(hass, entity, duofernId)
-    
+
     async_add_entities(to_add)
 
 
@@ -74,7 +75,7 @@ class DuofernShutter(CoverEntity):
         self._stick = stick
         self._openclose: Literal["up", "down", "stop"] = 'stop'
         self._last_update_time = datetime.datetime.now()
-        self._updating_interval = 5
+        self._stick.updating_interval = 5
 
     @property
     def name(self) -> str:
@@ -95,7 +96,7 @@ class DuofernShutter(CoverEntity):
             "name": self.name,
             "default_manufacturer": "Rademacher",
             "default_name": "Unkown Duofern Device",
-        } #type: ignore #(We only care about a subset and DeviceInfo doesn't mark the rest as optional)
+        }  # type: ignore #(We only care about a subset and DeviceInfo doesn't mark the rest as optional)
 
     @property
     def current_cover_position(self) -> int | None:
@@ -167,7 +168,8 @@ class DuofernShutter(CoverEntity):
             self._openclose = self._stick.duofern_parser.modules['by_code'][self._duofernId]['moving']
         except KeyError:
             self._state = None
-        if datetime.datetime.now() - self._last_update_time > datetime.timedelta(minutes=self._updating_interval):
+        if self._stick.updating_interval is not None and \
+                datetime.datetime.now() - self._last_update_time > datetime.timedelta(minutes=self._stick.updating_interval):
             self._stick.command(self._duofernId, 'getStatus')
-            self._last_update_time = datetime.datetime.now()
+            self._last_update_time = datetime.datetime.now() + datetime.timedelta(seconds=randint(0, 60))
         _LOGGER.info(f"{self._duofernId} state is now {self._state}")

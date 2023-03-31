@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers import entity_registry
 
 from pyduofern.duofern_stick import DuofernStickThreaded
 
@@ -52,7 +53,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     configfile = configEntries[0].data['config_file']
 
     stick = DuofernStickThreaded(serial_port=serial_port, system_code=code, config_file_json=configfile,
-                                      ephemeral=False)
+                                 ephemeral=False)
 
     _registerServices(hass, stick, configEntries[0])
     _registerUpdateHassFromStickCallback(hass, stick)
@@ -61,6 +62,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     setupDomainData(hass, stick)
 
     return True
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Setup the Duofern Config entries (entities, devices, etc...)"""
@@ -72,11 +74,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-
 def _registerStartStickHook(hass: HomeAssistant, stick: DuofernStickThreaded) -> None:
     def started_callback(event: Any) -> None:
-        stick.start() # Start the stick when ha is ready
-    
+        stick.start()  # Start the stick when ha is ready
+
     hass.bus.listen("homeassistant_started", started_callback)
 
 
@@ -85,16 +86,17 @@ def _registerUpdateHassFromStickCallback(hass: HomeAssistant, stick: DuofernStic
         if id is not None:
             try:
                 _LOGGER.info(f"Updatecallback for {id}")
-                device = hass.data[DOMAIN]['devices'][id] # Get device by id
+                device = hass.data[DOMAIN]['devices'][id]  # Get device by id
                 if device.enabled:
                     try:
-                        device.schedule_update_ha_state(True) # Trigger update on the updated entity
+                        device.schedule_update_ha_state(True)  # Trigger update on the updated entity
                     except AssertionError:
-                        _LOGGER.info("Update callback called before HA is ready") # Trying to update before HA is ready
+                        _LOGGER.info("Update callback called before HA is ready")  # Trying to update before HA is ready
             except KeyError:
-                _LOGGER.info("Update callback called on unknown device id") # Ignore invalid device ids
+                _LOGGER.info("Update callback called on unknown device id")  # Ignore invalid device ids
 
     stick.add_updates_callback(update_callback)
+
 
 def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: ConfigEntry) -> None:
     def start_pairing(call: ServiceCall) -> None:
@@ -118,26 +120,56 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
         stick.sync_devices()
 
     def ask_for_update(call: ServiceCall) -> None:
+        device_id = None
+
+        def get_device_id(hass_entity_id):
+            for ent in hass.data[DOMAIN]['devices'].values():
+                if ent.entity_id == hass_entity_id:
+                    return ent._duofernId
+            return None
+
         try:
             hass_device_id = call.data.get('device_id', None)
-            device_id = re.sub(r"[^\.]*.([0-9a-fA-F]+)", "\\1", hass_device_id) if hass_device_id is not None else None
+            if not isinstance(hass_device_id, list):
+                device_ids = [get_device_id(hass_device_id)]
+            else:
+                device_ids = [get_device_id(i) for i in hass_device_id]
         except Exception:
-            _LOGGER.exception(f"exception while getting device id {call}, {call.data}")
+            _LOGGER.exception(f"exception while getting device id {call}, {call.data}, i konw {hass.data[DOMAIN]['deviceByHassId']}, fyi deviceByID is {hass.data[DOMAIN]['devices']}")
+            for id,dev in hass.data[DOMAIN]['deviceByHassId'].items():
+                _LOGGER.warning(f"{id}, {dev.__dict__}")
             raise
-        if device_id is None:
+        if device_ids is None:
             _LOGGER.warning(f"device_id missing from call {call.data}")
             return
-        if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
-            _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}")
+        for device_id in device_ids:
+            if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
+                _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}. Gonna handle the other devices in {device_ids} though.")
+                continue
+            _LOGGER.info(f"scheduling update for {device_id}")
+            getDuofernStick(hass).command(device_id, 'getStatus')
+
+    def set_update_interval(call: ServiceCall) -> None:
+        try:
+            period_minutes = call.data.get('period_minutes', None)
+            if period_minutes == int(0):
+                period_minutes = None
+                _LOGGER.warning("set period_minutes to 0 - no updates will be triggered automatically")
+        except Exception:
+            _LOGGER.warning("something went wrong while reading period from parameters")
             return
-        getDuofernStick(hass).command(device_id, 'getStatus')
+        getDuofernStick(hass).updating_interval = period_minutes
 
     PAIRING_SCHEMA = vol.Schema({
         vol.Optional('timeout', default=30): cv.positive_int,
     })
 
     UPDATE_SCHEMA = vol.Schema({
-        vol.Required('device_id', default=None): cv.string,
+        vol.Required('device_id', default=list): list,
+    })
+
+    UPDATE_INTERVAL_SCHEMA = vol.Schema({
+        vol.Optional('period_minutes', default=5): cv.positive_int,
     })
 
     hass.services.register(DOMAIN, 'start_pairing', start_pairing, PAIRING_SCHEMA)
@@ -146,3 +178,4 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
     hass.services.register(DOMAIN, 'clean_config', clean_config)
     hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
     hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
+    hass.services.register(DOMAIN, 'set_update_interval', set_update_interval, UPDATE_INTERVAL_SCHEMA)
