@@ -11,23 +11,31 @@ sync_devices:
   description: re-sync devices (trigger after pairing, if it does not work, a restart of homeassistant may help)
 
 dump_device_state:
-  description: dump state of all known devices as a warning. State reflects state considering all 
-    messages received from devices (independent from homeassistant device state). 
+  description: dump state of all known devices as a warning. State reflects state considering all
+    messages received from devices (independent from homeassistant device state).
     Purpose is to debug whether there's a discrepancy with state reflected in Homeassistant.
 
 ask_for_update:
   description: ask the specified device for an update (in case of missed radio transmissions)
   fields:
+    all:
+      description: update all devices
+      required: false
+      selector:
+        boolean:
+
     device_id:
-      description: id of device to ask for an update
-      required: true
+      description: Entity to ask for an update. Needs to be a list.
+      required: false
       selector:
         entity:
           multiple: true
           integration: duofern
 
 set_update_interval:
-  description: set the automatically broadcasting a "please send an update" interval
+  description: set the automatically broadcasting a "please send an update" interval.
+    Be aware that this is not persisted. Use an automation to trigger this at Homeassistant
+    start if you always want it to be set to your custom value
   fields:
     period_minutes:
       description: approximate forced refresh interval in minutes - defaults to 5, 0 means never

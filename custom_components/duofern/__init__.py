@@ -129,9 +129,10 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
             return None
 
         try:
+            get_all = call.data.get('all', None)
             hass_device_id = call.data.get('device_id', None)
-            if not isinstance(hass_device_id, list):
-                device_ids = [get_device_id(hass_device_id)]
+            if get_all:
+                device_ids = hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']
             else:
                 device_ids = [get_device_id(i) for i in hass_device_id]
         except Exception:
@@ -143,11 +144,12 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
             _LOGGER.warning(f"device_id missing from call {call.data}")
             return
         for device_id in device_ids:
-            if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
-                _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}. Gonna handle the other devices in {device_ids} though.")
-                continue
-            _LOGGER.info(f"scheduling update for {device_id}")
-            getDuofernStick(hass).command(device_id, 'getStatus')
+            if device_id is not None:
+                if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
+                    _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}. Gonna handle the other devices in {device_ids} though.")
+                    continue
+                _LOGGER.info(f"asking {device_id} for update")
+                getDuofernStick(hass).command(device_id, 'getStatus')
 
     def set_update_interval(call: ServiceCall) -> None:
         try:
@@ -165,7 +167,8 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
     })
 
     UPDATE_SCHEMA = vol.Schema({
-        vol.Required('device_id', default=list): list,
+        vol.Optional('all', default=False): bool,
+        vol.Optional('device_id', default=list, ): list,
     })
 
     UPDATE_INTERVAL_SCHEMA = vol.Schema({
