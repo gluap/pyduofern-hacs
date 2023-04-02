@@ -8,7 +8,15 @@ start_pairing:
       example: 60
 
 sync_devices:
-  description: re-sync devices (trigger after pairing, if it does not work, a restart of homeassistant may help)
+  description: Re-sync Devices (trigger after pairing, if it does not work, a restart of homeassistant may help)
+
+clean_config:
+  description: Clean the duofern config. Will erase all devices from duofern config.
+    Paired devices should automatically be re-added after when they speak to duofern stick.
+    Non-Paired bogous devices not. **Use with caution - not tested.**
+    If you want to be sure manually edit ``.duofern.json`` and remove unwanted devices there
+    Be aware that homeassistant might keep its own record of these unwanted devices - you
+    have to deall with these via homeassistant GUI.
 
 dump_device_state:
   description: dump state of all known devices as a warning. State reflects state considering all
@@ -16,10 +24,10 @@ dump_device_state:
     Purpose is to debug whether there's a discrepancy with state reflected in Homeassistant.
 
 ask_for_update:
-  description: ask the specified device for an update (in case of missed radio transmissions)
+  description: Ask the specified device for an update (in case of missed radio transmissions).
   fields:
     all:
-      description: update all devices
+      description: Update all devices.
       required: false
       selector:
         boolean:
@@ -33,9 +41,9 @@ ask_for_update:
           integration: duofern
 
 set_update_interval:
-  description: set the automatically broadcasting a "please send an update" interval.
+  description: Set the automatically broadcasting a "please send an update" interval.
     Be aware that this is not persisted. Use an automation to trigger this at Homeassistant
-    start if you always want it to be set to your custom value
+    start if you always want it to be set to your custom value.
   fields:
     period_minutes:
       description: approximate forced refresh interval in minutes - defaults to 5, 0 means never

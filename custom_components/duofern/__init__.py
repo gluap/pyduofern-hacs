@@ -132,17 +132,22 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
             get_all = call.data.get('all', None)
             hass_device_id = call.data.get('device_id', None)
             if get_all:
-                device_ids = hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']
+                _LOGGER.info("Asking all devices for update")
+                device_ids = hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()
             else:
+                _LOGGER.info("Asking specific devices for update")
                 device_ids = [get_device_id(i) for i in hass_device_id]
         except Exception:
-            _LOGGER.exception(f"exception while getting device id {call}, {call.data}, i konw {hass.data[DOMAIN]['deviceByHassId']}, fyi deviceByID is {hass.data[DOMAIN]['devices']}")
+            _LOGGER.exception(f"Exception while getting device id {call}, {call.data}, i know {hass.data[DOMAIN]['deviceByHassId']}, fyi deviceByID is {hass.data[DOMAIN]['devices']}")
             for id,dev in hass.data[DOMAIN]['deviceByHassId'].items():
                 _LOGGER.warning(f"{id}, {dev.__dict__}")
             raise
         if device_ids is None:
             _LOGGER.warning(f"device_id missing from call {call.data}")
             return
+        _LOGGER.info(f"Updating these devices {' '.join(device_ids)}")
+        if not device_ids or all([i is None for i in device_ids]):
+            _LOGGER.warning("Found no valid device ids???")
         for device_id in device_ids:
             if device_id is not None:
                 if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
