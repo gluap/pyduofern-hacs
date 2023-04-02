@@ -56,7 +56,7 @@ names for your deices.
 
 ``duofern.ask_for_update``
 
-Ask all duofern devices to re-send their state in case. Can be used in setups where RF is finnicky.
+Ask duofern devices to re-send their state in case. Can be used in setups where RF is finnicky.
 
 ``duofern.dump_device_state``
 Dump the current last received state for all duofern modules as a warning level message to the log. This reflects the current state of all RF messages received from devices - What's not here wasn't received by the stick or came in garbled.
