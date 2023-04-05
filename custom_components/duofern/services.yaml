@@ -8,18 +8,14 @@ start_pairing:
       example: 60
 
 sync_devices:
-  description: Re-sync Devices (trigger after pairing, if it does not work, a restart of homeassistant may help)
+  description: Re-sync Devices (trigger after pairing, if it does not work, a restart of homeassistant may help). Also writes duofern config file.
+    May raise warnings for already-created devices. Do not worry.
 
 clean_config:
-  description: Clean the duofern config. Will erase all devices from duofern config.
-    Paired devices should automatically be re-added after when they speak to duofern stick.
-    Non-Paired bogous devices not. **Use with caution - not tested.**
-    If you want to be sure manually edit ``.duofern.json`` and remove unwanted devices there
-    Be aware that homeassistant might keep its own record of these unwanted devices - you
-    have to deall with these via homeassistant GUI.
+  description: Clean the duofern config. More info in the readme.
 
 dump_device_state:
-  description: dump state of all known devices as a warning. State reflects state considering all
+  description: Dump state of all known devices as a warning. State reflects state considering all
     messages received from devices (independent from homeassistant device state).
     Purpose is to debug whether there's a discrepancy with state reflected in Homeassistant.
 
