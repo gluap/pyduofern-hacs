@@ -37,9 +37,10 @@ class DomainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if os.path.isdir("/dev/"):
             serialdevs.update(set(glob.glob("/dev/ttyU*")))
             serialdevs.update(set(glob.glob("/dev/ttyA*")))
+            serialdevs.update(set(glob.glob("/dev/duofernstick")))
 
         if len(serialdevs) == 0:
-            serialdevs = set(["could not find /dev/serial/by-id/ or /dev/tty{U,A}*, did you plug in your duofern stick correctly?"])
+            serialdevs = set(["could not find /dev/serial/by-id/, /dev/tty{U,A}* or /dev/duofernstick. Did you plug in your duofern stick correctly?"])
 
         return self.async_show_form(
             step_id='user',
