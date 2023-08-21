@@ -94,8 +94,6 @@ class DuofernShutter(CoverEntity):
             },
             "manufacturer": "Rademacher",
             "name": self.name,
-            "default_manufacturer": "Rademacher",
-            "default_name": "Unkown Duofern Device",
         }  # type: ignore #(We only care about a subset and DeviceInfo doesn't mark the rest as optional)
 
     @property
