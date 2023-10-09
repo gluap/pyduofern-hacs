@@ -109,7 +109,6 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
 
     def sync_devices(call: ServiceCall) -> None:
         stick.sync_devices()
-        hass.async_create_task(hass.config_entries.async_forward_entry_setup(entry, DOMAIN))
 
     def dump_device_state(call: ServiceCall) -> None:
         _LOGGER.warning(getDuofernStick(hass).duofern_parser.modules)
