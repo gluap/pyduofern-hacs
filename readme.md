@@ -47,13 +47,6 @@ There are some services you can call via the service interface. A few of these t
 
 ![Pairing](./pairing.png)
 
-``duofern.sync_devices`` will force-sync any newly discovered devices.
-
-![sync](./sync_devices.png)
-
-Please use the renaming feature in the homeassistant GUI to arrive at human readable
-names for your deices.
-
 ``duofern.ask_for_update``
 
 Ask duofern devices to re-send their state in case. Can be used in setups where RF is finnicky.
