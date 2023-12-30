@@ -25,7 +25,7 @@ REQUIREMENTS = ['pyduofern==0.34.1']
 _LOGGER = logging.getLogger(__name__)
 
 from .const import DOMAIN, DUOFERN_COMPONENTS
-
+from homeassistant.helpers.device_registry import DeviceEntry
 # Validation of the user's configuration
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
     vol.Optional('serial_port',
@@ -35,6 +35,21 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
     vol.Optional('code', default="0000"): cv.string,
 }),
 }, extra=vol.ALLOW_EXTRA)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, config_entry: ConfigEntry, device_entry: DeviceEntry
+) -> bool:
+    """Remove a config entry from a device."""
+    stick = getDuofernStick(hass)
+    try:
+        del(stick.duofern_parser.modules["by_code"][device_entry.name])
+        stick.config['devices'] = [dev for dev in stick.config['devices'] if dev['id'] != device_entry.name]
+    except:
+        logging.warning(device_entry)
+        logging.warning(device_entry.__dict__)
+    stick.sync_devices()
+    return True
 
 
 def setup(hass: HomeAssistant, config: ConfigType) -> bool:
