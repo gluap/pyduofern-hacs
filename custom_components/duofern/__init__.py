@@ -50,13 +50,9 @@ async def async_remove_config_entry_device(
 ) -> bool:
     """Remove a config entry from a device."""
     stick = getDuofernStick(hass)
-    try:
-        del (stick.duofern_parser.modules["by_code"][device_entry.name])
-        stick.config['devices'] = [dev for dev in stick.config['devices'] if dev['id'] != device_entry.name]
-    except:
-        logging.warning(device_entry)
-        logging.warning(device_entry.__dict__)
-    stick.sync_devices()
+    if device_entry.name in stick.duofern_parser.modules["by_code"]:
+        del stick.duofern_parser.modules["by_code"][device_entry.name]
+    stick.config['devices'] = [dev for dev in stick.config['devices'] if dev['id'] != device_entry.name]
     return True
 
 
