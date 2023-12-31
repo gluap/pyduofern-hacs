@@ -43,7 +43,7 @@ To use ``pyduofern`` within [Homeassistant](https://home-assistant.io/), add the
 
 There are some services you can call via the service interface. A few of these to get you started:
 
-``duofern.start_pairing`` starts the pairing mode for a given number of seconds.
+``duofern.start_pairing`` starts the pairing mode for a given number of seconds. After pairing reload the integration to make the new devices visible.
 
 ![Pairing](./pairing.png)
 
@@ -54,30 +54,5 @@ Ask duofern devices to re-send their state in case. Can be used in setups where 
 ``duofern.dump_device_state``
 Dump the current last received state for all duofern modules as a warning level message to the log. This reflects the current state of all RF messages received from devices - What's not here wasn't received by the stick or came in garbled.
 
-``duofern.clean_config``
-> **Warning**
-> You should absolutely NOT use it if you have been running duofern for a long time and your covers have "human" names in the .duofern.json file. That option hasn't been used for a long time though - it is still from the time when homeassistant had no UI way of renaming entities/devices.
-
-**Use when:**
-- you have "ghost" devices that do not correspond to a physical device
-
-**Use like this:**
-- If you want to be sure you can go back: backup ``duofern.json``. 
-- Call ``duofern.clean_config``.
-- Restart homeassistant.
-- Observe that all your duofern devices are now disabled/unavailable.
-- Toggle/move all your duofern devices at the device to make sure that they send messages for homeassistant to pick up.
-- You can diagnose what devices were picked up again using ``duofern.dump_device_state``.
-- Once all devices are there: call ``duofern.sync_devices``.
-- Restart homeassistant for good measure.
-- Observe that the devices are now back.
-- If some are still missing: toggle them at the device and diagnose using ``dump_device_state`` until they are found again.
-- Once they are: ``duofern.sync_devices``, final restart.
-- Everything works.
-- If not: maybe you want to return to your backed-up ``duofern.json``.
-
-The duofern python module keeps a list of devices that are paired. ``clean_config`` throws that list away.
-
-In normal operation, the list should rebuild itself - whenever a message is received from a device that was previously paired it should appear in the list.
-It's not very well tested because it's not a common situation. I ran it, restarted homeassistant, and my devices became available again after a few seconds.
-
+``duofern.sync_devices``
+Write the duofern config file with the known devices. normally not required from the user.

@@ -64,6 +64,7 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     """Unload deCONZ config entry."""
 
     stick = getDuofernStick(hass)
+    stick.sync_devices()
     stick.stop()
     try:
         stick.serial_connection.close()
@@ -174,8 +175,8 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
         _LOGGER.warning("start pairing")
         getDuofernStick(hass).unpair(call.data.get('timeout', 60))
 
-    # def sync_devices(call: ServiceCall) -> None:
-    #    stick.sync_devices()
+    def sync_devices(call: ServiceCall) -> None:
+        stick.sync_devices()
 
     def dump_device_state(call: ServiceCall) -> None:
         _LOGGER.warning(getDuofernStick(hass).duofern_parser.modules)
@@ -250,8 +251,8 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
 
     hass.services.register(DOMAIN, 'start_pairing', start_pairing, PAIRING_SCHEMA)
     hass.services.register(DOMAIN, 'start_unpairing', start_unpairing, PAIRING_SCHEMA)
-    # hass.services.register(DOMAIN, 'sync_devices', sync_devices)
-    hass.services.register(DOMAIN, 'clean_config', clean_config)
+    hass.services.register(DOMAIN, 'sync_devices', sync_devices)
+    #hass.services.register(DOMAIN, 'clean_config', clean_config)
     hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
     hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
     hass.services.register(DOMAIN, 'set_update_interval', set_update_interval, UPDATE_INTERVAL_SCHEMA)
