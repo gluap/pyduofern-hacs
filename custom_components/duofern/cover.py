@@ -102,8 +102,10 @@ class DuofernShutter(CoverEntity):
         return self._state
 
     @property
-    def is_closed(self) -> bool:
+    def is_closed(self) -> bool | None:
         """Return true if cover is close."""
+        if self._state is None:
+            return None
         return self._state == 0
 
     @property

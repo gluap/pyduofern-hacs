@@ -1,10 +1,11 @@
+import asyncio
 import logging
 import os
 import re
 from typing import Any
 
 # from homeassistant.const import 'serial_port', 'config_file', 'code'
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.config_entries import ConfigEntry
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -25,6 +26,13 @@ REQUIREMENTS = ['pyduofern==0.34.1']
 _LOGGER = logging.getLogger(__name__)
 
 from .const import DOMAIN, DUOFERN_COMPONENTS
+from .domain_data import _getData
+from custom_components.duofern.domain_data import getDuofernStick, isDeviceSetUp, saveDeviceAsSetUp, unsetupDevice
+
+from homeassistant.helpers.device_registry import DeviceEntry
+
+SERVICES = ['start_pairing', 'start_unpairing', 'clean_config', 'dump_device_state', 'ask_for_update',
+            'set_update_interval']
 
 # Validation of the user's configuration
 CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
@@ -35,6 +43,62 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({
     vol.Optional('code', default="0000"): cv.string,
 }),
 }, extra=vol.ALLOW_EXTRA)
+
+
+async def async_remove_config_entry_device(
+        hass: HomeAssistant, config_entry: ConfigEntry, device_entry: DeviceEntry
+) -> bool:
+    """Remove a config entry from a device."""
+    stick = getDuofernStick(hass)
+    if device_entry.name in stick.duofern_parser.modules["by_code"]:
+        del stick.duofern_parser.modules["by_code"][device_entry.name]
+    stick.config['devices'] = [dev for dev in stick.config['devices'] if dev['id'] != device_entry.name]
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Unload deCONZ config entry."""
+
+    stick = getDuofernStick(hass)
+    stick.sync_devices()
+    stick.stop()
+    try:
+        stick.serial_connection.close()
+    except:
+        _LOGGER.exception("closing serial connection failed")
+
+    await asyncio.sleep(0.5)
+
+
+
+    for duofernDevice in stick.config['devices']:
+        _LOGGER.info(f"unsetting up device {duofernDevice}")
+        duofernId: str = duofernDevice['id']
+        if not isDeviceSetUp(hass, duofernId):
+            continue
+        _LOGGER.info(f"unsetting up device {duofernDevice}")
+        unsetupDevice(hass, duofernId)
+
+    for component in DUOFERN_COMPONENTS:
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_unload(config_entry, component)
+        )
+
+
+    newstick = DuofernStickThreaded(serial_port=stick.port, system_code=stick.system_code,
+                                    config_file_json=stick.config_file,
+                                    ephemeral=False)
+    newstick.start()
+    hass.data[DOMAIN]['stick'] = newstick
+    del stick
+
+    return True
+
+
+@callback
+def async_unload_services(hass: HomeAssistant) -> None:
+    for service in SERVICES:
+        hass.services.async_remove(DOMAIN, service)
 
 
 def setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -137,8 +201,9 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
                 _LOGGER.info("Asking specific devices for update")
                 device_ids = [get_device_id(i) for i in hass_device_id]
         except Exception:
-            _LOGGER.exception(f"Exception while getting device id {call}, {call.data}, i know {hass.data[DOMAIN]['deviceByHassId']}, fyi deviceByID is {hass.data[DOMAIN]['devices']}")
-            for id,dev in hass.data[DOMAIN]['deviceByHassId'].items():
+            _LOGGER.exception(
+                f"Exception while getting device id {call}, {call.data}, i know {hass.data[DOMAIN]['deviceByHassId']}, fyi deviceByID is {hass.data[DOMAIN]['devices']}")
+            for id, dev in hass.data[DOMAIN]['deviceByHassId'].items():
                 _LOGGER.warning(f"{id}, {dev.__dict__}")
             raise
         if device_ids is None:
@@ -150,7 +215,8 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
         for device_id in device_ids:
             if device_id is not None:
                 if device_id not in hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code']:
-                    _LOGGER.warning(f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}. Gonna handle the other devices in {device_ids} though.")
+                    _LOGGER.warning(
+                        f"{device_id} is not a valid duofern device, I only know {hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()}. Gonna handle the other devices in {device_ids} though.")
                     continue
                 _LOGGER.info(f"asking {device_id} for update")
                 getDuofernStick(hass).command(device_id, 'getStatus')
@@ -182,7 +248,7 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
     hass.services.register(DOMAIN, 'start_pairing', start_pairing, PAIRING_SCHEMA)
     hass.services.register(DOMAIN, 'start_unpairing', start_unpairing, PAIRING_SCHEMA)
     hass.services.register(DOMAIN, 'sync_devices', sync_devices)
-    hass.services.register(DOMAIN, 'clean_config', clean_config)
+    #hass.services.register(DOMAIN, 'clean_config', clean_config)
     hass.services.register(DOMAIN, 'dump_device_state', dump_device_state)
     hass.services.register(DOMAIN, 'ask_for_update', ask_for_update, UPDATE_SCHEMA)
     hass.services.register(DOMAIN, 'set_update_interval', set_update_interval, UPDATE_INTERVAL_SCHEMA)
