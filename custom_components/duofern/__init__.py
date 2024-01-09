@@ -118,6 +118,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     stick = DuofernStickThreaded(serial_port=serial_port, system_code=code, config_file_json=configfile,
                                  ephemeral=False)
+    stick.updating_interval = 5*60
 
     _registerServices(hass, stick, configEntries[0])
     _registerUpdateHassFromStickCallback(hass, stick)
@@ -149,7 +150,7 @@ def _registerUpdateHassFromStickCallback(hass: HomeAssistant, stick: DuofernStic
     def update_callback(id: str | None, key: Any, value: Any) -> None:
         if id is not None:
             try:
-                _LOGGER.info(f"Updatecallback for {id}")
+                _LOGGER.debug(f"Updatecallback for {id}: {key}: {value}")
                 device = hass.data[DOMAIN]['devices'][id]  # Get device by id
                 if device.enabled:
                     try:
@@ -196,7 +197,8 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
             hass_device_id = call.data.get('device_id', None)
             if get_all:
                 _LOGGER.info("Asking all devices for update")
-                device_ids = hass.data[DOMAIN]['stick'].duofern_parser.modules['by_code'].keys()
+                hass.data[DOMAIN]['stick'].status_request()
+                return
             else:
                 _LOGGER.info("Asking specific devices for update")
                 device_ids = [get_device_id(i) for i in hass_device_id]
@@ -224,13 +226,13 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
     def set_update_interval(call: ServiceCall) -> None:
         try:
             period_minutes = call.data.get('period_minutes', None)
-            if period_minutes == int(0):
+            if period_minutes == 0:
                 period_minutes = None
                 _LOGGER.warning("set period_minutes to 0 - no updates will be triggered automatically")
         except Exception:
             _LOGGER.warning("something went wrong while reading period from parameters")
             return
-        getDuofernStick(hass).updating_interval = period_minutes
+        getDuofernStick(hass).updating_interval = period_minutes*60 if period_minutes is not None else None
 
     PAIRING_SCHEMA = vol.Schema({
         vol.Optional('timeout', default=30): cv.positive_int,
@@ -242,7 +244,7 @@ def _registerServices(hass: HomeAssistant, stick: DuofernStickThreaded, entry: C
     })
 
     UPDATE_INTERVAL_SCHEMA = vol.Schema({
-        vol.Optional('period_minutes', default=5): cv.positive_int,
+        vol.Optional('period_minutes', default=5): cv.positive_float,
     })
 
     hass.services.register(DOMAIN, 'start_pairing', start_pairing, PAIRING_SCHEMA)

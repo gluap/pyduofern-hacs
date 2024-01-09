@@ -75,7 +75,6 @@ class DuofernShutter(CoverEntity):
         self._stick = stick
         self._openclose: Literal["up", "down", "stop"] = 'stop'
         self._last_update_time = datetime.datetime.now()
-        self._stick.updating_interval = 5
 
     @property
     def name(self) -> str:
@@ -111,7 +110,7 @@ class DuofernShutter(CoverEntity):
     @property
     def should_poll(self) -> bool:
         """Whether this entity should be polled or uses subscriptions"""
-        return True  # TODO: Add config option for subscriptions over polling
+        return False  # TODO: Add config option for subscriptions over polling
 
     @property
     def supported_features(self) -> CoverEntityFeature:
@@ -168,8 +167,4 @@ class DuofernShutter(CoverEntity):
             self._openclose = self._stick.duofern_parser.modules['by_code'][self._duofernId]['moving']
         except KeyError:
             self._state = None
-        if self._stick.updating_interval is not None and \
-                datetime.datetime.now() - self._last_update_time > datetime.timedelta(minutes=self._stick.updating_interval):
-            self._stick.command(self._duofernId, 'getStatus')
-            self._last_update_time = datetime.datetime.now() + datetime.timedelta(seconds=randint(0, 60))
         _LOGGER.info(f"{self._duofernId} state is now {self._state}")

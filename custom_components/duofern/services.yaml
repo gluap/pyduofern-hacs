@@ -39,9 +39,10 @@ set_update_interval:
   fields:
     period_minutes:
       description: approximate forced refresh interval in minutes - defaults to 5, 0 means never
-      example: 5
+      example: 5.0
       required: true
       selector:
         number:
-          min: 0
-          max: 60
+          min: 0.0
+          max: 10.0
+          step: 0.1
