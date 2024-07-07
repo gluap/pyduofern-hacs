@@ -80,8 +80,9 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
         unsetupDevice(hass, duofernId)
 
     for component in DUOFERN_COMPONENTS:
-        await hass.config_entries.async_forward_entry_unload(config_entry, component)
-
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_unload(config_entry, component)
+        )
 
 
     newstick = DuofernStickThreaded(serial_port=stick.port, system_code=stick.system_code,
@@ -131,7 +132,9 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Setup the Duofern Config entries (entities, devices, etc...)"""
     for component in DUOFERN_COMPONENTS:
-        await hass.config_entries.async_forward_entry_setup(entry, component)
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(entry, component)
+        )
 
     return True
 
