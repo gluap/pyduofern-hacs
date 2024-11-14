@@ -130,8 +130,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Setup the Duofern Config entries (entities, devices, etc...)"""
-    for component in DUOFERN_COMPONENTS:
-        await hass.config_entries.async_forward_entry_setups(entry, component)
+    await hass.config_entries.async_forward_entry_setups(entry, DUOFERN_COMPONENTS)
 
     return True
 
