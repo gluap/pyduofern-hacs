@@ -9,7 +9,7 @@ import voluptuous as vol
 # found advice in the homeassistant creating components manual
 # https://home-assistant.io/developers/creating_components/
 # Import the device class from the component that you want to support
-from homeassistant.components.light import LightEntity, PLATFORM_SCHEMA, SUPPORT_BRIGHTNESS, ATTR_BRIGHTNESS
+from homeassistant.components.light import ColorMode, LightEntity, PLATFORM_SCHEMA, SUPPORT_BRIGHTNESS, ATTR_BRIGHTNESS
 
 from homeassistant.core import HomeAssistant
 
@@ -101,11 +101,11 @@ class DuofernLight(LightEntity):
             return None
 
     @property
-    def supported_features(self) -> int:  #type: ignore #(This method uses a legacy functionality)
+    def supported_color_modes(self) -> int:  #type: ignore #(This method uses a legacy functionality)
         if self._code.startswith("48"):
-            return SUPPORT_BRIGHTNESS
+            return ColorMode.BRIGHTNESS
         else:
-            return 0
+            return ColorMode.ONOFF
 
     def turn_on(self,**kwargs: int) -> None:
         if self._code.startswith("48"):
