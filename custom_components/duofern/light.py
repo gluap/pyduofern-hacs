@@ -9,7 +9,7 @@ import voluptuous as vol
 # found advice in the homeassistant creating components manual
 # https://home-assistant.io/developers/creating_components/
 # Import the device class from the component that you want to support
-from homeassistant.components.light import ColorMode, LightEntity, PLATFORM_SCHEMA, SUPPORT_BRIGHTNESS, ATTR_BRIGHTNESS
+from homeassistant.components.light import ColorMode, LightEntity, PLATFORM_SCHEMA, ATTR_BRIGHTNESS
 
 from homeassistant.core import HomeAssistant
 
