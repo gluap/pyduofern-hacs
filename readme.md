@@ -56,3 +56,6 @@ Dump the current last received state for all duofern modules as a warning level 
 
 ``duofern.sync_devices``
 Write the duofern config file with the known devices. normally not required from the user.
+
+``duofern.set_update_interval``
+Set the automatically broadcasting a "please send an update" interval. Be aware that this is not persisted. Use an automation to trigger this at Homeassistant start if you always want it to be set to your custom value.
