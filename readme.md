@@ -41,7 +41,7 @@ To use ``pyduofern`` within [Homeassistant](https://home-assistant.io/), add the
 
 ### Usage
 
-There are some services you can call via the service interface. A few of these to get you started:
+There are some actions you can call via the actions interface (via "Developer Tools -> Action"). A few of these to get you started:
 
 ``duofern.start_pairing`` starts the pairing mode for a given number of seconds. After pairing reload the integration to make the new devices visible.
 
@@ -55,7 +55,7 @@ Ask duofern devices to re-send their state in case. Can be used in setups where 
 Dump the current last received state for all duofern modules as a warning level message to the log. This reflects the current state of all RF messages received from devices - What's not here wasn't received by the stick or came in garbled.
 
 ``duofern.sync_devices``
-Write the duofern config file with the known devices. normally not required from the user.
+Write the duofern config file with the known devices. Normally not required from the user.
 
 ``duofern.set_update_interval``
-Set the automatic broadcasting of a "please send an update" interval, which triggers a device status update. Accepts all positive values, e. g. "10" for a 10 minutes interval. Using "0" disables the automatic update which is then also logged to Home Assistant. Be aware that this setting is not persistent. Use an automation to trigger this at Home Assistant start if you always want it to be set to your custom value.
+Set the automatic broadcasting of a "please send an update" message, which - if received by devices - results in a status update message to be sent back. Accepts all positive values, e.g. ``10`` for a 10-minute interval. Using `0` disables the automatic update which is then also logged to Home Assistant. Be aware that this setting is not persistent. Use an automation to trigger this at Home Assistant start if you always want it to be set to your custom value.
