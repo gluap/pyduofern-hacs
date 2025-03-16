@@ -21,7 +21,7 @@ class DomainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "not_hex"
             else:
                 try:
-                    if hex(int(user_input['code'], 16)).lower() != "0x" + user_input['code'].lower():
+                    if f"0x{int(user_input['code'],16):04x}" != "0x" + user_input['code'].lower():
                         errors["base"] = "not_hex"
                 except ValueError:
                     errors["base"] = "not_hex"
