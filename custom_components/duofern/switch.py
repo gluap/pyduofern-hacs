@@ -30,20 +30,25 @@ async def async_setup_entry(
     _LOGGER.info("switch: already added: " + str(stick.config['devices']))
 
     to_add: List[SwitchEntity] = []
-    for duofernDevice in stick.config['devices']:
-        duofernId: str = duofernDevice['id']
-        subId = "manualMode"
-        if not is_shutter(duofernId):
-            _LOGGER.info("switch: skipping: " + str(duofernId) + " because it is not a shutter")
-            continue
-        
-        if isDeviceSetUp(hass, duofernId, subId):
-            _LOGGER.info("switch: skipping: " + str(duofernId) + " because it is is already set up")
-            continue
 
-        switch = DuofernShutterConfigurableSwitch(duofernId, stick, "manualMode", "Manual Mode", "manual_mode")
-        to_add.append(switch)
-        saveDeviceAsSetUp(hass, switch, duofernId, subId)
+    shutterSwitches = {
+        "manualMode": ["manualMode", "Manual Mode", "manual_mode"],
+        "sunAutomatic": ["sunAutomatic", "Sun Automatic", "sun_automatic"]
+    }
+    for subId, [command, nameSuffix, idSuffix] in shutterSwitches.entries():
+        for duofernDevice in stick.config['devices']:
+            duofernId: str = duofernDevice['id']
+            if not is_shutter(duofernId):
+                _LOGGER.info("switch: skipping: " + str(duofernId) + " because it is not a shutter")
+                continue
+            
+            if isDeviceSetUp(hass, duofernId, subId):
+                _LOGGER.info("switch: skipping: " + str(duofernId) + " because it is is already set up")
+                continue
+
+            switch = DuofernShutterConfigurableSwitch(duofernId, stick, command, nameSuffix, idSuffix)
+            to_add.append(switch)
+            saveDeviceAsSetUp(hass, switch, duofernId, subId)
 
     async_add_entities(to_add)
 
