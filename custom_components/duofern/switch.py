@@ -35,13 +35,13 @@ async def async_setup_entry(
         "manualMode": ["manualMode", "Manual Mode", "manual_mode"],
         "sunAutomatic": ["sunAutomatic", "Sun Automatic", "sun_automatic"]
     }
-    for subId, [command, nameSuffix, idSuffix] in shutterSwitches.entries():
+    for subId, [command, nameSuffix, idSuffix] in shutterSwitches.items():
         for duofernDevice in stick.config['devices']:
             duofernId: str = duofernDevice['id']
             if not is_shutter(duofernId):
                 _LOGGER.info("switch: skipping: " + str(duofernId) + " because it is not a shutter")
                 continue
-            
+
             if isDeviceSetUp(hass, duofernId, subId):
                 _LOGGER.info("switch: skipping: " + str(duofernId) + " because it is is already set up")
                 continue
