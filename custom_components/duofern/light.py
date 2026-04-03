@@ -100,12 +100,22 @@ class DuofernLight(LightEntity):
         else:
             return None
 
+    # ✅ FIX: return right set datatype
     @property
-    def supported_color_modes(self) -> int:  #type: ignore #(This method uses a legacy functionality)
+    def supported_color_modes(self) -> set[ColorMode]:
+        if self._code.startswith("48"):
+            return {ColorMode.BRIGHTNESS}
+        else:
+            return {ColorMode.ONOFF}
+
+    # ✅ FIX: REQUIRED in new HA version
+    @property
+    def color_mode(self) -> ColorMode:
         if self._code.startswith("48"):
             return ColorMode.BRIGHTNESS
         else:
             return ColorMode.ONOFF
+
 
     def turn_on(self,**kwargs: int) -> None:
         if self._code.startswith("48"):
