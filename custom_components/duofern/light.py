@@ -100,7 +100,6 @@ class DuofernLight(LightEntity):
         else:
             return None
 
-    # ✅ FIX: return right set datatype
     @property
     def supported_color_modes(self) -> set[ColorMode]:
         if self._code.startswith("48"):
@@ -108,7 +107,6 @@ class DuofernLight(LightEntity):
         else:
             return {ColorMode.ONOFF}
 
-    # ✅ FIX: REQUIRED in new HA version
     @property
     def color_mode(self) -> ColorMode:
         if self._code.startswith("48"):
