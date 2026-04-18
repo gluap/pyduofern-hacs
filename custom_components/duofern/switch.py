@@ -33,7 +33,9 @@ async def async_setup_entry(
 
     shutterSwitches = {
         "manualMode": ["manualMode", "Manual Mode", "manual_mode"],
-        "sunAutomatic": ["sunAutomatic", "Sun Automatic", "sun_automatic"]
+        "sunAutomatic": ["sunAutomatic", "Sun Automatic", "sun_automatic"],
+        "dawnAutomatic": ["dawnAutomatic", "Dawn Automatic", "dawn_automatic"],
+        "duskAutomatic": ["duskAutomatic", "Dusk Automatic", "dusk_automatic"]
     }
     for subId, [command, nameSuffix, idSuffix] in shutterSwitches.items():
         for duofernDevice in stick.config['devices']:
